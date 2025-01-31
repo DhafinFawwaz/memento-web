@@ -1,6 +1,6 @@
 export type MediaSources = {
-    videos: string[],
-    images: string[]
+    outputs: string[],
+    materials: string[]
 }
 
 export type Memento = {
@@ -8,5 +8,6 @@ export type Memento = {
     created_at: string,
     updated_at: string,
     medias: MediaSources,
-    revenue: number
+    revenue: number,
+    additional: string
 }
