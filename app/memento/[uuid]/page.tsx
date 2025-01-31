@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import { Memento } from "./types";
 import { db } from "@/utils/supabase/server";
 
@@ -13,7 +12,7 @@ async function getMemento(uuid: string): Promise<Memento> {
     return data;
 }
 
-export default async function MementoUser({ params }: { params: { uuid: string } }) {
+export default async function MementoUser({ params }: { params: Promise<{ uuid: string }> }) {
     const { uuid } = await params;
     return getMemento(uuid)
     .then(memento => <>

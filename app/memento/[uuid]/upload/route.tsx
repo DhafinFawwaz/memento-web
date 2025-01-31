@@ -5,5 +5,6 @@ import { NextResponse } from "next/server";
 // return signed url so that client can upload medias
 
 export async function POST(request: Request) {
-    
+    console.log(request);
+    return NextResponse.json({ message: "Not implemented yet" });
 }
