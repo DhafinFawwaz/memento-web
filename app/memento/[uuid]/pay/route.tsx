@@ -1,6 +1,9 @@
 import { db } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 import { Memento } from "../types";
+import fs from "fs";
+import { createTransport } from "nodemailer";
+import { createCSVStr } from "@/app/csv-creator";
 
 async function processPayment(request: Request) {
     // TODO: payment stuff here
@@ -21,14 +24,62 @@ async function savePayment(revenue: string, additional: string): Promise<Memento
     return data[0];
 }
 
-// check the amount of revenue and send notification with spreadsheet to gmail based on rule provided
-async function notifyIfRevenueEnough() {
+async function countPayments(): Promise<number> {
+    const supabase = await db();
+    const { data, error } = await supabase
+        .from("memento")
+        .select("count", { count: "exact" });
+    if (error) throw error;
+    return data[0].count;
+}
 
+const transporter = createTransport({
+    service: "gmail",
+    auth: {
+      user: "",
+      pass: ".",
+    },
+});
+function createOption(file: string) {
+    return {
+        from: "",
+        to: "",
+        subject: "Today Report",
+        text: "Here's the report",
+        attachments: [
+            {
+                filename: "report.csv",
+                content: file,
+                contentType: "text/csv",
+            },
+        ],
+    };
+}
+
+async function sendReportNotification() {
+    console.log("Sending report notification");
+    const csvstr = await createCSVStr();
+    transporter.sendMail(createOption(csvstr), (err, info) => {
+        if (err) {
+            console.error(err);
+        } else {
+            console.log(info);
+        }
+    });
+}
+
+// check the amount of revenue and send notification with spreadsheet to gmail based on rule provided
+// lets just say every 5 customers
+async function notifyIfRevenueEnough() {
+    const count = await countPayments();
+    if(count % 5 === 0) {
+        await sendReportNotification();
+    }
 }
 
 // payment stuff
 // return boolean if payment is successful and uuid of the user
-export async function POST(request: Request) {
+export async function GET(request: Request) {
     console.log(request);
     try {
         const data = await processPayment(request);
