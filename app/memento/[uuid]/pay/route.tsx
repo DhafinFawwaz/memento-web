@@ -1,10 +1,8 @@
 import { db } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 import { Memento } from "../types";
-import fs from "fs";
-import { createTransport } from "nodemailer";
 import { createCSVStr } from "@/app/csv-creator";
-import { sendEmail } from "@/app/mail-sender";
+import { sendEmail as sendEmailToSelf } from "@/app/mail-sender";
 
 async function processPayment(request: Request) {
     // TODO: payment stuff here
@@ -25,6 +23,7 @@ async function savePayment(revenue: string, additional: string): Promise<Memento
     return data[0];
 }
 
+// TODO: optimize this with denormalized data
 async function countPayments(): Promise<number> {
     const supabase = await db();
     const { data, error } = await supabase
@@ -35,24 +34,21 @@ async function countPayments(): Promise<number> {
 }
 
 
-async function sendReportNotification() {
-    console.log("Sending report notification");
-    const csvstr = await createCSVStr();
-    sendEmail(csvstr);
-}
 
 // check the amount of revenue and send notification with spreadsheet to gmail based on rule provided
 // lets just say every 5 customers
 async function notifyIfRevenueEnough() {
     const count = await countPayments();
     if(count % 5 === 0) {
-        await sendReportNotification();
+        const csvstr = await createCSVStr();
+        console.log("Sending report notification");
+        sendEmailToSelf(csvstr);
     }
 }
 
 // payment stuff
 // return boolean if payment is successful and uuid of the user
-export async function GET(request: Request) {
+export async function POST(request: Request) {
     console.log(request);
     try {
         const data = await processPayment(request);

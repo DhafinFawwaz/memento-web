@@ -1,5 +1,5 @@
 export type MediaSources = {
-    outputs: string[],
+    results: string[],
     materials: string[]
 }
 

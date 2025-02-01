@@ -1,5 +1,4 @@
 import { createCSVStr } from "@/app/csv-creator";
-import { db } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 
 
