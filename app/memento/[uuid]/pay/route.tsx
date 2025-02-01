@@ -4,6 +4,7 @@ import { Memento } from "../types";
 import fs from "fs";
 import { createTransport } from "nodemailer";
 import { createCSVStr } from "@/app/csv-creator";
+import { sendEmail } from "@/app/mail-sender";
 
 async function processPayment(request: Request) {
     // TODO: payment stuff here
@@ -33,39 +34,11 @@ async function countPayments(): Promise<number> {
     return data[0].count;
 }
 
-const transporter = createTransport({
-    service: "gmail",
-    auth: {
-      user: "",
-      pass: ".",
-    },
-});
-function createOption(file: string) {
-    return {
-        from: "",
-        to: "",
-        subject: "Today Report",
-        text: "Here's the report",
-        attachments: [
-            {
-                filename: "report.csv",
-                content: file,
-                contentType: "text/csv",
-            },
-        ],
-    };
-}
 
 async function sendReportNotification() {
     console.log("Sending report notification");
     const csvstr = await createCSVStr();
-    transporter.sendMail(createOption(csvstr), (err, info) => {
-        if (err) {
-            console.error(err);
-        } else {
-            console.log(info);
-        }
-    });
+    sendEmail(csvstr);
 }
 
 // check the amount of revenue and send notification with spreadsheet to gmail based on rule provided
