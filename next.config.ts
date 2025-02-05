@@ -13,7 +13,6 @@ const nextConfig: NextConfig = {
       }
     ]
   },
-  crossOrigin: "anonymous",
   eslint: {
     ignoreDuringBuilds: true
   },
