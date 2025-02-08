@@ -29,8 +29,10 @@ async function insertMedias(uuid: string, results: string[], materials: string[]
 export async function POST(request: Request) {
     console.log(request);
 
+    const splitUrl = request.url.split("/");
+    const uuid = splitUrl[splitUrl.length - 2];
+
     const body = await request.json();
-    const uuid: string = body.uuid;
     const materials: string[] = body.materials;
     const results: [string, string] = body.results;
 
