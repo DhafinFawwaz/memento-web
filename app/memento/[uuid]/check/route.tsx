@@ -1,6 +1,6 @@
 import { db } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { Memento } from "../types";
+import { Memento } from "../../types";
 
 async function getNewCreatedMemento(request: Request): Promise<Memento | undefined> {
     const supabase = await db();

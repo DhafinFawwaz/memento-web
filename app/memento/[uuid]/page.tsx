@@ -1,5 +1,5 @@
 import { PostgrestError } from "@supabase/supabase-js";
-import { Memento } from "./types";
+import { Memento } from "../types";
 import { db } from "@/utils/supabase/server";
 import Image from "next/image";
 
