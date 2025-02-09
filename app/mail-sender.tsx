@@ -1,16 +1,17 @@
 import { createTransport } from "nodemailer";
+import { env } from "./env";
 
 const transporter = createTransport({
     service: "gmail",
     auth: {
-      user: process.env.NEXT_PUBLIC_EMAIL_USER,
-      pass: process.env.NEXT_PUBLIC_GMAIL_APP_PASSWORD,
+      user: env.emailUser,
+      pass: env.gmailAppPassword,
     },
 });
 function createOption(file: string) {
     return {
-        from: process.env.NEXT_PUBLIC_EMAIL_USER,
-        to: process.env.NEXT_PUBLIC_EMAIL_USER,
+        from: env.emailUser,
+        to: env.emailUser,
         subject: "Today Report",
         text: "Here's the report",
         attachments: [

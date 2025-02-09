@@ -2,6 +2,7 @@ import { PostgrestError } from "@supabase/supabase-js";
 import { Memento } from "../types";
 import { db } from "@/utils/supabase/server";
 import Image from "next/image";
+import { env } from "@/app/env";
 
 async function getMemento(uuid: string): Promise<Memento> {
     const supabase = await db();
@@ -12,8 +13,8 @@ async function getMemento(uuid: string): Promise<Memento> {
         .single();
     if (error) throw error;
     for(let i = 0; i < (data as Memento).medias.results.length; i++) {
-        (data as Memento).medias.results[i] = `${process.env.NEXT_PUBLIC_BUCKET_BASE_URL}/storage/v1/object/public/memento/databases/${uuid}/result/${(data as Memento).medias.results[i]}`;
-        (data as Memento).medias.materials[i] = `${process.env.NEXT_PUBLIC_BUCKET_BASE_URL}/storage/v1/object/public/memento/databases/${uuid}/${(data as Memento).medias.materials[i]}`;
+        (data as Memento).medias.results[i] = `${env.bucketBaseUrl}/storage/v1/object/public/memento/databases/${uuid}/result/${(data as Memento).medias.results[i]}`;
+        (data as Memento).medias.materials[i] = `${env.bucketBaseUrl}/storage/v1/object/public/memento/databases/${uuid}/${(data as Memento).medias.materials[i]}`;
     }
     return data;
 }
