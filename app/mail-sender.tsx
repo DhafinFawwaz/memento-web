@@ -8,12 +8,12 @@ const transporter = createTransport({
       pass: env.gmailAppPassword,
     },
 });
-function createOption(file: string) {
+function createOption(file: string, dayStr: string) {
     return {
         from: env.emailUser,
         to: env.emailUser,
-        subject: "Today Report",
-        text: "Here's the report",
+        subject: "Memento Report",
+        text: "Report for today, " + dayStr,
         attachments: [
             {
                 filename: "report.csv",
@@ -24,8 +24,8 @@ function createOption(file: string) {
     };
 }
 
-export function sendEmail(csvstr: string) {
-    transporter.sendMail(createOption(csvstr), (err, info) => {
+export function sendEmailToSelf(csvstr: string, dayStr: string) {
+    transporter.sendMail(createOption(csvstr, dayStr), (err, info) => {
         if (err) {
             console.error(err);
         } else {

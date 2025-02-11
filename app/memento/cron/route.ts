@@ -1,6 +1,6 @@
 import { db } from "@/utils/supabase/server";
-import { createCSVStr } from "@/app/csv-creator";
-import { sendEmail as sendEmailToSelf } from "@/app/mail-sender";
+import { createCSVStr, getAllMemento, getAllMementoYesterday, yesterday } from "@/app/csv-creator";
+import { sendEmailToSelf } from "@/app/mail-sender";
 
 // TODO: optimize this with denormalized data
 async function countPayments(): Promise<number> {
@@ -13,20 +13,23 @@ async function countPayments(): Promise<number> {
 }
 
 
-
-// check the amount of revenue and send notification with spreadsheet to gmail based on rule provided
-// lets just say every 5 customers
-async function notifyIfRevenueEnough() {
-    const count = await countPayments();
-    if(count % 5 === 0) {
-        const csvstr = await createCSVStr();
-        console.log("Sending report notification");
-        sendEmailToSelf(csvstr);
-    }
+async function notifyPreviousDayRevenue() {
+    const previousDayMementos = await getAllMementoYesterday();
+    const csvstr = await createCSVStr(previousDayMementos);
+    console.log("Sending report notification");
+    const yesterdayStr = (await yesterday()).toDateString();
+    sendEmailToSelf(csvstr, yesterdayStr);
 }
 
-
 export default function GET(request: Request) {
-    notifyIfRevenueEnough();
-    return new Response("OK");
+    const authHeader = request.headers.get('authorization');
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        return new Response('Unauthorized', {
+            status: 401,
+        });
+    }
+
+
+    notifyPreviousDayRevenue();
+    return new Response("Notification sent", { status: 200 });
 }

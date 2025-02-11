@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
     ]
   },
   eslint: {
-    ignoreDuringBuilds: true
+    ignoreDuringBuilds: true // deadline is so short lol, not paid enough for this
   },
 };
 
