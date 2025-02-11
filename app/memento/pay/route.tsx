@@ -40,5 +40,5 @@ export async function GET(request: Request) {
     const transaction = await snap.createTransaction(param)
     console.log('transactionToken:', transaction.token);
 
-    return NextResponse.json({success: true, data: transaction});
+    return NextResponse.json({success: true, data: {transaction, uuid}});
 }
