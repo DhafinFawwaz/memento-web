@@ -40,17 +40,19 @@ async function processPayment(request: Request) {
     }
     const revenue = body.gross_amount
     const additional = body.transaction_id || "";
-    const data = await savePayment(revenue, additional);
+    const uuid = body.order_id;
+    const data = await savePayment(revenue, additional, uuid);
     return data;
 }
 
-async function savePayment(revenue: string, additional: string): Promise<Memento> {
+async function savePayment(revenue: string, additional: string, uuid: string): Promise<Memento> {
     const supabase = await db();
     const { data, error } = await supabase
         .from("memento")
         .insert({
             revenue: revenue,
-            additional: additional
+            additional: additional,
+            uuid: uuid,
         })
         .select()
     if (error) throw error;
