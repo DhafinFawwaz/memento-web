@@ -17,6 +17,8 @@ export function middleware(request: NextRequest) {
       'Access-Control-Allow-Headers',
       'X-CSRF-Token, X-Requested-With, Authorisation, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
     )
+    console.log("middleware")
+    console.log(res.headers)
     return res
 }
  
