@@ -1,4 +1,4 @@
-import { createCSVStr } from "@/app/csv-creator";
+import { createCSVStr, getAllMementoYesterday } from "@/app/csv-creator";
 import { NextResponse } from "next/server";
 
 
@@ -11,7 +11,8 @@ export async function POST(req: Request) {
     // TODO: Check password here
 
     try {
-        const csvstr = await createCSVStr();
+        const mementos = await getAllMementoYesterday();
+        const csvstr = await createCSVStr(mementos);
         const csvBlob = new Blob([csvstr], { type: "text/csv" });
       
         return new Response(csvBlob, {
