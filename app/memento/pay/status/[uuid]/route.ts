@@ -5,7 +5,7 @@ function getApiUrl(orderId: string) {
     if(env.midtransIsProduction) {
         return `https://api.midtrans.com/v2/${orderId}/status`
     }
-    return "https://api.sandbox.midtrans.com/v2/${orderId}/status"
+    return `https://api.sandbox.midtrans.com/v2/${orderId}/status`
 }
 
 export async function GET(request: Request) {
