@@ -14,15 +14,6 @@ export function middleware(request: NextRequest) {
     }
 
     const res = NextResponse.next()
-    // res.headers.append('Access-Control-Allow-Credentials', "true")
-    // res.headers.append('Access-Control-Allow-Origin', '*')
-    // res.headers.append('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT,OPTIONS')
-    // res.headers.append(
-    //   'Access-Control-Allow-Headers',
-    //   'X-CSRF-Token, X-Requested-With, Authorisation, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-    // )
-    console.log("middleware")
-    console.log(res.headers)
     return res
 }
  

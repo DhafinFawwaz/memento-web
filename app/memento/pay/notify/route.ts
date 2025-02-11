@@ -12,7 +12,8 @@ type MidtransNotificationRequest = {
     signature_key: string,
     transaction_status: string,
     fraud_status: string,
-    additional: string
+    additional: string,
+    transaction_id: string,
 }
 
 // SHA512(order_id+status_code+gross_amount+serverKey)
@@ -23,9 +24,9 @@ async function isNotificationSafe(notification: MidtransNotificationRequest) {
     
     const serverKey = env.midtransServerKey;
     const hash = sha512(order_id + status_code + gross_amount + serverKey);
-    if (hash !== signature_key) {
-        throw new Error("Invalid signature");
-    }
+    console.log([hash, signature_key]);
+    if (hash !== signature_key) return false;
+
     return true;
 }
 
@@ -36,7 +37,7 @@ async function processPayment(request: Request) {
         throw new Error("Not a valid notification");
     }
     const revenue = body.gross_amount
-    const additional = body.additional || "";
+    const additional = body.transaction_id || "";
     const data = await savePayment(revenue, additional);
     return data;
 }
