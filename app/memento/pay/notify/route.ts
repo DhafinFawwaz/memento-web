@@ -1,0 +1,66 @@
+import { db } from "@/utils/supabase/server";
+import { NextResponse } from "next/server";
+import { Memento } from "../../types";
+import { env } from "@/app/env";
+import { sha512 } from "js-sha512";
+
+type MidtransNotificationRequest = {
+    // order_id+status_code+gross_amount+ServerKey
+    order_id: string,
+    status_code: string,
+    gross_amount: string,
+    signature_key: string,
+    transaction_status: string,
+    fraud_status: string,
+    additional: string
+}
+
+// SHA512(order_id+status_code+gross_amount+serverKey)
+async function isNotificationSafe(notification: MidtransNotificationRequest) {
+    const { order_id, status_code, gross_amount, signature_key, transaction_status, fraud_status } = notification;
+    if(fraud_status !== "accept") return false;
+    if(!(transaction_status === "capture" || transaction_status === "settlement")) return false;
+    
+    const serverKey = env.midtransServerKey;
+    const hash = sha512(order_id + status_code + gross_amount + serverKey);
+    if (hash !== signature_key) {
+        throw new Error("Invalid signature");
+    }
+    return true;
+}
+
+async function processPayment(request: Request) {
+    const body: MidtransNotificationRequest = await request.json();
+    console.log("Payment", body);
+    if(!isNotificationSafe(body)) {
+        throw new Error("Not a valid notification");
+    }
+    const revenue = body.gross_amount
+    const additional = body.additional || "";
+    const data = await savePayment(revenue, additional);
+    return data;
+}
+
+async function savePayment(revenue: string, additional: string): Promise<Memento> {
+    const supabase = await db();
+    const { data, error } = await supabase
+        .from("memento")
+        .insert({
+            revenue: revenue,
+            additional: additional
+        })
+        .select()
+    if (error) throw error;
+    return data[0];
+}
+
+// payment stuff
+// called by Payment Gateway API after payment successful
+export async function POST(request: Request) {
+    try {
+        const data = await processPayment(request);
+        return NextResponse.json({ success: true, data: data });    
+    } catch (e) {
+        return NextResponse.json({ success: false, error: e }, { status: 400 });
+    }
+}
