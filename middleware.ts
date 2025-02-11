@@ -23,5 +23,6 @@ export const config = {
         '/memento/:uuid/upload', 
         // '/memento/cron', // different env var
         '/memento/pay', 
+        '/memento/pay/status/:uuid', 
     ],
 }
