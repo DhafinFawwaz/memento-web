@@ -1,19 +1,12 @@
 import { db } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { Memento } from "../types";
+import { Memento, Snap } from "../types";
 import { env } from "@/app/env";
 import { randomUUID } from "crypto";
 const midtransClient = require('midtrans-client');
 
 
-type Snap = {
-    apiConfig: any
-    httpClient: any
-    transaction: any
-    createTransaction: (parameter: any) => Promise<{ token: string, redirect_url: string }>
-    createTransactionToken: (parameter: any) => Promise<any>
-    createTransactionRedirectUrl: (parameter: any) => Promise<any>
-}
+
 
 
 // called by the client when showing the payment page

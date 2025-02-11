@@ -1,19 +1,18 @@
 import { env } from "@/app/env"
+import { Snap, SnapStatus } from "@/app/memento/types";
 import { NextResponse } from "next/server";
+const midtransClient = require('midtrans-client');
 
-function getApiUrl(orderId: string) {
-    if(env.midtransIsProduction) {
-        return `https://api.midtrans.com/v2/${orderId}/status`
-    }
-    return `https://api.sandbox.midtrans.com/v2/${orderId}/status`
-}
 
 export async function GET(request: Request) {
     const splitUrl = request.url.split("/");
     const uuid = splitUrl[splitUrl.length - 1];
-    const res = await fetch(getApiUrl(uuid))
-    const data = await res.json()
 
+    const snap: Snap = new midtransClient.Snap({
+        isProduction : env.midtransIsProduction,
+        serverKey : env.midtransServerKey
+    });
+    const data: SnapStatus = await snap.transaction.status(uuid);
 
     if(data.fraud_status !== "accept") return NextResponse.json({ success: true, data: {
         status: "fraud",
