@@ -23,6 +23,9 @@ export async function GET(request: Request) {
         },
         credit_card: {
             secure: true
+        },
+        callbacks: {
+            finish: "javascript:void(0)"
         }
     }
 
