@@ -7,17 +7,11 @@ export function DownloadButton({ onClick }: { onClick?: () => void }) {
 }
 
 async function download(src: string) {
-    const response = await fetch(src);
-    if(!response.ok) throw new Error("Failed to download");
-    try {
-        const blob = await response.blob();
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = src;
-        a.click();
-    } catch(e) {
-        throw new Error("Failed to download");
-    }
+    const a = document.createElement('a');
+    a.href = src;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 }
 
 export function Downloadable({ src, size, onDownloadFail }: { src: string, size: number, onDownloadFail?: () => void }) {
