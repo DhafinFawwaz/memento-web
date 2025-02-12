@@ -9,7 +9,8 @@ export type Memento = {
     updated_at: string,
     medias: MediaSources,
     revenue: number,
-    additional: string
+    additional: string,
+    boothid: string
 }
 
 export type Snap = {

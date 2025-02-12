@@ -1,6 +1,6 @@
 import { db } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { Memento, Snap } from "../types";
+import { Memento, Snap } from "../../../types";
 import { env } from "@/app/env";
 import { randomUUID } from "crypto";
 const midtransClient = require('midtrans-client');
@@ -14,6 +14,9 @@ export async function GET(request: Request) {
     if (!env.midtransPrice) {
         return NextResponse.json({ success: false, error: "Price not set" }, { status: 400 });
     }
+
+    const split = request.url.split("/");
+    const boothid = split[split.length - 2];
     
     const uuid = randomUUID();
     const param = {
@@ -27,6 +30,9 @@ export async function GET(request: Request) {
         // callbacks: {
         //     finish: "javascript:void(0)"
         // }
+        customer_details: {
+            boothid: boothid
+        }
     }
 
     const snap: Snap = new midtransClient.Snap({
