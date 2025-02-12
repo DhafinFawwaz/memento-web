@@ -1,4 +1,5 @@
 import { createCSVStr, getAllMementoYesterday } from "@/app/csv-creator";
+import { env } from "@/app/env";
 import { NextResponse } from "next/server";
 
 
@@ -6,9 +7,8 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
     const formData = await req.formData();
     const password = formData.get("password");
-    console.log("password", password);
     if(!password) return NextResponse.json({ success: false, error: "No password found" }, { status: 400 });
-    // TODO: Check password here
+    if(password !== env.cronSecret) return NextResponse.json({ success: false, error: "Incorrect password" }, { status: 400 });
 
     try {
         const mementos = await getAllMementoYesterday();

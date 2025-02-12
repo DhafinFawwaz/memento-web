@@ -17,7 +17,7 @@ async function notifyPreviousDayRevenue() {
     const previousDayMementos = await getAllMementoYesterday();
     const csvstr = await createCSVStr(previousDayMementos);
     console.log("Sending report notification");
-    const yesterdayStr = (await yesterday()).toDateString();
+    const yesterdayStr = yesterday();
     sendEmailToSelf(csvstr, yesterdayStr);
 }
 

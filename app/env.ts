@@ -9,4 +9,5 @@ export const env = {
     midtransServerKey: process.env.MIDTRANS_SERVER_KEY,
     midtransIsProduction: process.env.MIDTRANS_IS_PRODUCTION === "1",
     midtransPrice: process.env.MIDTRANS_PRICE,
+    cronSecret: process.env.CRON_SECRET,
 }
