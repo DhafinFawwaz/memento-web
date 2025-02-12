@@ -8,7 +8,7 @@ export function DownloadButton({ onClick }: { onClick?: () => void }) {
 
 async function download(src: string) {
     const a = document.createElement('a');
-    a.href = src;
+    a.href = src + "?download=";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
