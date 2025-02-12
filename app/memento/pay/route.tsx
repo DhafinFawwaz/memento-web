@@ -24,9 +24,9 @@ export async function GET(request: Request) {
         credit_card: {
             secure: true
         },
-        callbacks: {
-            finish: "javascript:void(0)"
-        }
+        // callbacks: {
+        //     finish: "javascript:void(0)"
+        // }
     }
 
     const snap: Snap = new midtransClient.Snap({

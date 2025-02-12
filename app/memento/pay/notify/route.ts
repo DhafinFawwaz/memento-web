@@ -41,6 +41,7 @@ async function processPayment(request: Request) {
     const revenue = body.gross_amount
     const additional = body.transaction_id || "";
     const uuid = body.order_id;
+    console.log("savePayment", revenue, additional, uuid);
     const data = await savePayment(revenue, additional, uuid);
     return data;
 }
