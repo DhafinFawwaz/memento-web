@@ -19,9 +19,10 @@ export async function GET(request: Request) {
     const boothid = split[split.length - 2];
     
     const uuid = randomUUID();
+    const orderId = `${boothid}:${uuid}`;
     const param = {
         transaction_details: {
-            order_id: uuid,
+            order_id: orderId,
             gross_amount: parseInt(env.midtransPrice!)
         },
         credit_card: {
@@ -30,9 +31,6 @@ export async function GET(request: Request) {
         // callbacks: {
         //     finish: "javascript:void(0)"
         // }
-        customer_details: {
-            boothid: boothid
-        }
     }
 
     const snap: Snap = new midtransClient.Snap({

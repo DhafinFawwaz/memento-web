@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { Memento } from "../../types";
 import { env } from "@/app/env";
 import { sha512 } from "js-sha512";
+import { extractOrderId } from "../../utils";
 
 type MidtransNotificationRequest = {
     // order_id+status_code+gross_amount+ServerKey
@@ -40,13 +41,13 @@ async function processPayment(request: Request) {
     }
     const revenue = body.gross_amount
     const additional = body.transaction_id || "";
-    const uuid = body.order_id;
+    const [boothid, uuid] = extractOrderId(body.order_id);
     console.log("savePayment", revenue, additional, uuid);
-    const data = await savePayment(revenue, additional, uuid);
+    const data = await savePayment(revenue, additional, uuid, boothid);
     return data;
 }
 
-async function savePayment(revenue: string, additional: string, uuid: string): Promise<Memento> {
+async function savePayment(revenue: string, additional: string, uuid: string, boothid: string): Promise<Memento> {
     const supabase = await db();
     const { data, error } = await supabase
         .from("memento")
@@ -54,6 +55,7 @@ async function savePayment(revenue: string, additional: string, uuid: string): P
             revenue: revenue,
             additional: additional,
             uuid: uuid,
+            boothid: boothid
         })
         .select()
     if (error) throw error;
