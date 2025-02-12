@@ -17,7 +17,7 @@ type MidtransNotificationRequest = {
 }
 
 // SHA512(order_id+status_code+gross_amount+serverKey)
-async function isNotificationSafe(notification: MidtransNotificationRequest) {
+function isNotificationSafe(notification: MidtransNotificationRequest) {
     const { order_id, status_code, gross_amount, signature_key, transaction_status, fraud_status } = notification;
     console.log(fraud_status)
     if(fraud_status !== "accept") return false;
