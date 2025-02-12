@@ -1,8 +1,7 @@
-import { PostgrestError } from "@supabase/supabase-js";
 import { Memento } from "../types";
 import { db } from "@/utils/supabase/server";
-import Image from "next/image";
 import { env } from "@/app/env";
+import MementoUserClient from "./client-page";
 
 async function getMemento(uuid: string): Promise<Memento> {
     const supabase = await db();
@@ -18,30 +17,20 @@ async function getMemento(uuid: string): Promise<Memento> {
     for(let i = 0; i < (data as Memento).medias.materials.length; i++) {
         (data as Memento).medias.materials[i] = `${env.bucketBaseUrl}/storage/v1/object/public/memento/databases/${uuid}/${(data as Memento).medias.materials[i]}`;
     }
-    console.log(data);
     return data;
 }
 
+
+
 export default async function MementoUser({ params }: { params: Promise<{ uuid: string }> }) {
     const { uuid } = await params;
-    return getMemento(uuid)
-    .then(memento => <>
-    <h1>Good</h1>
-    <div>{JSON.stringify(memento)}</div>
+    const memento = await getMemento(uuid);
 
-    <h2>Results</h2>
-    {memento.medias.results.map((media, i) => <video key={i} controls>
-        <source src={media}/>
-    </video>)}
+    return <>
+<div className="fixed bg-slate-900 -z-50 w-screen h-dvh h-vh"></div>
 
-    <h2>Materials</h2>
-    {memento.medias.materials.map((media, i) => <video key={i} controls>
-        <source src={media}/>
-    </video>)}
-</>)
-        .catch(e => <>
-    <h1>Error</h1>
-    <div>{JSON.stringify(e)}</div>
-</>)
-    
+<MementoUserClient memento={memento}/>
+
+
+</>
 }

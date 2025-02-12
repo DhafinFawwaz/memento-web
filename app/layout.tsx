@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import { Teachers } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 
-const teachers = Teachers({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const outfit = Outfit({
+  subsets: ["latin", "latin-ext"],
   display: "swap",
 });
 
@@ -21,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${teachers.variable} antialiased`}>
+      <body className={`${outfit.className} antialiased`}>
         {children}
       </body>
     </html>
