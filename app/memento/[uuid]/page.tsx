@@ -14,8 +14,11 @@ async function getMemento(uuid: string): Promise<Memento> {
     if (error) throw error;
     for(let i = 0; i < (data as Memento).medias.results.length; i++) {
         (data as Memento).medias.results[i] = `${env.bucketBaseUrl}/storage/v1/object/public/memento/databases/${uuid}/result/${(data as Memento).medias.results[i]}`;
+    }
+    for(let i = 0; i < (data as Memento).medias.materials.length; i++) {
         (data as Memento).medias.materials[i] = `${env.bucketBaseUrl}/storage/v1/object/public/memento/databases/${uuid}/${(data as Memento).medias.materials[i]}`;
     }
+    console.log(data);
     return data;
 }
 
