@@ -13,6 +13,10 @@ export type Memento = {
     boothid: string
 }
 
+export type Filter = {
+    [key: string]: [string, string]
+}
+
 export type Snap = {
     apiConfig: any
     httpClient: any

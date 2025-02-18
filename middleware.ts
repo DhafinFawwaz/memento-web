@@ -23,7 +23,12 @@ export const config = {
         '/memento/:uuid/check', 
         '/memento/:uuid/upload', 
         // '/memento/cron', // different env var
+        '/memento/cron/notify', 
+        '/memento/cron/cleanup', 
         '/memento/pay', 
-        '/memento/pay/status/:uuid', 
+        '/memento/pay/status/:uuid',
+         
+        '/memento/config/filter',
+        '/memento/config/template',
     ],
 }
