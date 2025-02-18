@@ -1,8 +1,11 @@
 {
     "crons": [
       {
-        "path": "/memento/cron",
+        "path": "/memento/cron/notify",
         "schedule": "0 11 * * *"
+      },{
+        "path": "/memento/cron/cleanup",
+        "schedule": "0 0 * * 1"
       }
     ],
     "headers": [

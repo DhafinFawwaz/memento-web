@@ -29,7 +29,10 @@ export async function GET(request: Request) {
         });
     }
 
-
-    notifyPreviousDayRevenue();
-    return new Response("Notification sent", { status: 200 });
+    try {
+        notifyPreviousDayRevenue();
+        return new Response("Notification sent", { status: 200 });
+    } catch (e) {
+        return new Response(JSON.stringify(e), { status: 500 });
+    }
 }
