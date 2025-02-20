@@ -10,7 +10,6 @@ async function getMemento(uuid: string): Promise<Memento> {
         .select("*")
         .eq("uuid", uuid)
         .single();
-    if (error) throw error;
     for(let i = 0; i < (data as Memento).medias.results.length; i++) {
         (data as Memento).medias.results[i] = `${env.bucketBaseUrl}/storage/v1/object/public/memento/databases/${uuid}/result/${(data as Memento).medias.results[i]}`;
     }
@@ -25,6 +24,8 @@ async function getMemento(uuid: string): Promise<Memento> {
 export default async function MementoUser({ params }: { params: Promise<{ uuid: string }> }) {
     const { uuid } = await params;
     const memento = await getMemento(uuid);
+
+    if(!memento) return <div>Not found</div>;
 
     return <>
 <div className="fixed bg-slate-900 -z-50 w-screen h-dvh h-vh"></div>
