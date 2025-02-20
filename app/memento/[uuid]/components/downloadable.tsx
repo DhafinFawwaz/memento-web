@@ -15,8 +15,15 @@ async function download(src: string) {
 }
 
 export function Downloadable({ src, size, onDownloadFail }: { src: string, size: number, onDownloadFail?: () => void }) {
+    
+    const isVideo = src.endsWith(".mp4") || src.endsWith(".webm") || src.endsWith(".ogg");
+    
     return <div className="w-full flex flex-col gap-4">
+    {isVideo ? 
+    <video src={src} autoPlay loop  width={size} height={size} className="h-80 object-contain"></video>
+    :
     <Image src={src} alt={src} width={size} height={size} className="h-80 object-contain"/>
+    }
     <DownloadButton onClick={() => download(src).catch(onDownloadFail)}/>
 </div>
 }
