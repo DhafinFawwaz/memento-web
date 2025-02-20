@@ -20,7 +20,7 @@ export function Downloadable({ src, size, onDownloadFail }: { src: string, size:
     
     return <div className="w-full flex flex-col gap-4">
     {isVideo ? 
-    <video src={src} autoPlay loop  width={size} height={size} className="h-80 object-contain"></video>
+    <video src={src} autoPlay loop muted width={size} height={size} className="h-80 object-contain"></video>
     :
     <Image src={src} alt={src} width={size} height={size} className="h-80 object-contain"/>
     }
@@ -30,7 +30,7 @@ export function Downloadable({ src, size, onDownloadFail }: { src: string, size:
 export function DownloadableSmall({ src, size, onDownloadFail }: { src: string, size: number, onDownloadFail?: () => void }) {
     return <div className="w-64 flex flex-col gap-4">
     {/* <Image src={src} alt={src} width={size} height={size} className="h-40 object-contain"/> */}
-    <video src={src} autoPlay loop></video>
+    <video src={src} autoPlay loop muted></video>
     <DownloadButton onClick={() => download(src).catch(onDownloadFail)}/>
 </div>
 }
