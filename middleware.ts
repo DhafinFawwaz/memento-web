@@ -22,9 +22,8 @@ export const config = {
     matcher: [
         '/memento/:uuid/check', 
         '/memento/:uuid/upload', 
-        // '/memento/cron', // different env var
-        '/memento/cron/notify', 
-        '/memento/cron/cleanup', 
+        // '/memento/cron/notify', // different env var 
+        // '/memento/cron/cleanup', // different env var
         '/memento/pay', 
         '/memento/pay/status/:uuid',
          
