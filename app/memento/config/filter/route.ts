@@ -4,14 +4,14 @@ import { NextResponse } from "next/server";
 
 async function insertFilter(filter: Filter) {
     const supabase = await db();
-    const { data, error } = await supabase.from('filters').insert(filter);
+    const { data, error } = await supabase.from('filter').insert(filter);
     if (error) throw error;
     return data;
 }
 
 async function getHighestIdFilter() {
     const supabase = await db();
-    const { data, error } = await supabase.from('filters').select('id').order('id', { ascending: false }).limit(1);
+    const { data, error } = await supabase.from('filter').select('data').order('id', { ascending: false }).limit(1);
     if (error) throw error;
     return data;
 }
@@ -35,6 +35,7 @@ export async function GET(request: Request) {
         const data = await getHighestIdFilter();
         return NextResponse.json(data);
     } catch (error) {
-        return new Response(JSON.stringify(error), {status: 500,});
+        console.log(error);
+        return new Response(JSON.stringify(error), {status: 400,});
     }
 }
