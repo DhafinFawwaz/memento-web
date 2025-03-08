@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 
  
 export function middleware(request: NextRequest) {
-    return NextResponse.next();
     if (request.method === 'OPTIONS') {
         return new Response("ok", {status: 200})
     }
@@ -29,5 +28,7 @@ export const config = {
          
         '/memento/config/filter',
         '/memento/config/template',
+
+        '/memento/template',
     ],
 }
