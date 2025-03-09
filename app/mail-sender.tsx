@@ -24,12 +24,16 @@ function createOption(file: string, dayStr: string) {
     };
 }
 
-export function sendEmailToSelf(csvstr: string, dayStr: string) {
-    transporter.sendMail(createOption(csvstr, dayStr), (err, info) => {
-        if (err) {
-            console.error(err);
-        } else {
-            console.log(info);
-        }
+export async function sendEmailToSelf(csvstr: string, dayStr: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        transporter.sendMail(createOption(csvstr, dayStr), (err, info) => {
+            if (err) {
+                console.error(err);
+                reject(err);
+            } else {
+                console.log(info);
+                resolve();
+            }
+        });
     });
 }

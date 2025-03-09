@@ -21,7 +21,7 @@ async function notifyPreviousDayRevenue() {
     console.log("yesterday()");
     const yesterdayStr = yesterday();
     console.log("Sending report notification");
-    sendEmailToSelf(csvstr, yesterdayStr);
+    await sendEmailToSelf(csvstr, yesterdayStr);
 }
 
 export const dynamic = 'force-dynamic';
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 
     try {
         console.log("notifyPreviousDayRevenue()");
-        notifyPreviousDayRevenue();
+        await notifyPreviousDayRevenue();
         return new Response("Notification sent", { status: 200 });
     } catch (e) {
         return new Response(JSON.stringify(e), { status: 500 });
