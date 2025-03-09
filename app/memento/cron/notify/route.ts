@@ -14,15 +14,21 @@ async function countPayments(): Promise<number> {
 
 
 async function notifyPreviousDayRevenue() {
+    console.log("getAllMementoYesterday()()");
     const previousDayMementos = await getAllMementoYesterday();
+    console.log("createCSVStr()");
     const csvstr = await createCSVStr(previousDayMementos);
-    console.log("Sending report notification");
+    console.log("yesterday()");
     const yesterdayStr = yesterday();
+    console.log("Sending report notification");
     sendEmailToSelf(csvstr, yesterdayStr);
 }
 
+export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
+    console.log("auth")
     const authHeader = request.headers.get('authorization');
+    console.log(authHeader, "===", `Bearer ${process.env.CRON_SECRET}`);
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
         return new Response('Unauthorized', {
             status: 401,
@@ -30,6 +36,7 @@ export async function GET(request: Request) {
     }
 
     try {
+        console.log("notifyPreviousDayRevenue()");
         notifyPreviousDayRevenue();
         return new Response("Notification sent", { status: 200 });
     } catch (e) {
