@@ -14,13 +14,9 @@ async function countPayments(): Promise<number> {
 
 
 async function notifyPreviousDayRevenue() {
-    console.log("getAllMementoYesterday()()");
     const previousDayMementos = await getAllMementoYesterday();
-    console.log("createCSVStr()");
     const csvstr = await createCSVStr(previousDayMementos);
-    console.log("yesterday()");
     const yesterdayStr = yesterday();
-    console.log("Sending report notification");
     await sendEmailToSelf(csvstr, yesterdayStr);
 }
 
@@ -36,7 +32,6 @@ export async function GET(request: Request) {
     }
 
     try {
-        console.log("notifyPreviousDayRevenue()");
         await notifyPreviousDayRevenue();
         return new Response("Notification sent", { status: 200 });
     } catch (e) {
