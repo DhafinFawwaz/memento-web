@@ -14,7 +14,9 @@ export function yesterday() {
 }
 
 export async function getAllMementoYesterday() {
+    console.log("await db()");
     const supabase = await db();
+    console.log("supabase.from");
     const { data, error } = await supabase.from("memento").select("*").gt("created_at", yesterday());
     console.log(error);
     if (error) throw error;
