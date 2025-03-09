@@ -4,7 +4,9 @@ import { NextResponse } from "next/server";
 
 async function insertFilter(filter: Filter) {
     const supabase = await db();
-    const { data, error } = await supabase.from('filter').insert(filter);
+    const { data, error } = await supabase.from('filter').insert({
+        data: filter
+    });
     if (error) throw error;
     return data;
 }
@@ -25,6 +27,7 @@ export async function POST(request: Request) {
         const data = await insertFilter(filter);
         return new Response(JSON.stringify(data), {status: 200});
     } catch (error) {
+        console.log(error);
         return new Response(JSON.stringify(error), {status: 500,});
     }
     
