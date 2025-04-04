@@ -5,6 +5,16 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --bg-size: 200px;
+  --x-scroll-speed: 4;
+  --y-scroll-speed: 1;
+
+  --bg-color-1: #e2e8f0;
+  --bg-color-2: #f8faf2;
+
+  --text-outline-width: 10px;
+  --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ease-out-back-cubic: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,4 +29,28 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+
+.grid-pattern {
+  animation: scroll-right 5s linear infinite;
+  width: calc(300vh * var(--x-scroll-speed));
+  height: calc(300vh * var(--y-scroll-speed));
+  position: fixed;
+  z-index: -1000;
+  background-color: #e5e5f7;
+  background-image:  repeating-linear-gradient(45deg, var(--bg-color-1) 25%, transparent 25%, transparent 75%, var(--bg-color-1) 75%, var(--bg-color-1)), repeating-linear-gradient(45deg, var(--bg-color-1) 25%, var(--bg-color-2) 25%, var(--bg-color-2) 75%, var(--bg-color-1) 75%, var(--bg-color-1));
+  background-position: 0 0, calc(var(--bg-size) / 2) calc(var(--bg-size) / 2);
+  background-size: var(--bg-size) var(--bg-size);
+  rotate: 25deg;
+}
+
+
+@keyframes scroll-right {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(var(--bg-size) * var(--x-scroll-speed))) translateY(calc(var(--bg-size) * var(--y-scroll-speed)));
+  }
 }
