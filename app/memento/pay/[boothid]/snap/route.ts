@@ -33,10 +33,12 @@ export async function GET(request: Request) {
         // }
     }
 
-    const snap: Snap = new midtransClient.Snap({
+    const snap: Snap = new midtransClient.Snap();
+    snap.apiConfig.set({
         isProduction : env.midtransIsProduction,
-        serverKey : env.midtransServerKey
-    });
+        serverKey : env.midtransServerKey,
+        clientKey : env.midtransClientKey
+    })
     const transaction = await snap.createTransaction(param)
     console.log('transactionToken:', transaction.token);
 
