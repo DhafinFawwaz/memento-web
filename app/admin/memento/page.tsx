@@ -5,26 +5,6 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-export async function setPaid(uuid: string, is_paid: boolean): Promise<Memento | null> {
-    const supabase = await db();
-    const { data, error } = await supabase
-        .from("memento")
-        .update({ is_paid: is_paid, updated_at: new Date() })
-        .eq("uuid", uuid)
-        .select("*")
-        .single()
-    if (error) throw error;
-    return data;
-}
-
-export async function getAllMemento(): Promise<Memento[] | null> {
-    const supabase = await db();
-    const { data, error } = await supabase
-        .from("memento")
-        .select("*")
-        .order("created_at", { ascending: false })
-    return data;
-}
 
 function formatDate(date: string): string {
     const d = new Date(date);
@@ -108,4 +88,26 @@ export default async function PaymentPage() {
 </table>
 
 </>
+}
+
+
+async function setPaid(uuid: string, is_paid: boolean): Promise<Memento | null> {
+    const supabase = await db();
+    const { data, error } = await supabase
+        .from("memento")
+        .update({ is_paid: is_paid, updated_at: new Date() })
+        .eq("uuid", uuid)
+        .select("*")
+        .single()
+    if (error) throw error;
+    return data;
+}
+
+async function getAllMemento(): Promise<Memento[] | null> {
+    const supabase = await db();
+    const { data, error } = await supabase
+        .from("memento")
+        .select("*")
+        .order("created_at", { ascending: false })
+    return data;
 }
