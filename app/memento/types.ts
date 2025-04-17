@@ -10,7 +10,8 @@ export type Memento = {
     medias: MediaSources,
     revenue: number,
     additional: string,
-    boothid: string
+    boothid: string,
+    is_paid: boolean,
 }
 
 export type Filter = {
