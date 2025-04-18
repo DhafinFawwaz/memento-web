@@ -34,15 +34,15 @@ async function togglePaid(formData: FormData) {
 async function isRequestFromAdmin() {
     const cookieStore = cookies();
     const token = (await cookieStore).get('token');
-    return token?.value ?? null;
+    if(token && token.value === process.env.BASIC_AUTH_SECRET) {
+        return true;
+    } 
+    return false;
 }
 
 export default async function PaymentPage() {
     if(!await isRequestFromAdmin()) {
-        return <div>
-            <div>Unauthorized</div>
-            <Link href={"/admin/login"} className="text-blue-400 hover:text-blue-700">Login</Link>
-        </div>;
+        redirect("/admin/login");
     }
 
     const mementos = await getAllMemento();

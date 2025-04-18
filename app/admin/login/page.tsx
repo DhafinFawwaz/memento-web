@@ -5,7 +5,19 @@ import { redirect } from "next/navigation";
 import { env } from "@/app/env";
 import { cookies } from "next/headers";
 
-export default function LoginPage() {
+async function isRequestFromAdmin() {
+    const cookieStore = cookies();
+    const token = (await cookieStore).get('token');
+    if(token && token.value === process.env.BASIC_AUTH_SECRET) {
+        return true;
+    } 
+    return false;
+}
+
+export default async function LoginPage() {
+    if(await isRequestFromAdmin()) {
+        redirect("/admin/memento");
+    }
     async function submit(formData: FormData) {
         "use server";
         
@@ -31,7 +43,7 @@ export default function LoginPage() {
             value: password,
             httpOnly: true,
             path: '/',
-            secure: false,
+            secure: true,
             maxAge: 60 * 60 * 24 * 7, // 1 week
         })
         redirect("/admin/memento"); 
