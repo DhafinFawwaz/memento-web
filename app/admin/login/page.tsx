@@ -31,7 +31,7 @@ export default function LoginPage() {
             value: password,
             httpOnly: true,
             path: '/',
-            secure: true,
+            secure: false,
             maxAge: 60 * 60 * 24 * 7, // 1 week
         })
         redirect("/admin/memento"); 

@@ -30,5 +30,7 @@ export const config = {
         '/memento/config/template',
 
         '/memento/template',
+
+        '/memento/admin/memento/forcepay',
     ],
 }
