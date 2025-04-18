@@ -24,7 +24,7 @@ export const config = {
         // '/memento/cron/notify', // different env var 
         // '/memento/cron/cleanup', // different env var
         '/memento/pay', 
-        '/memento/pay/status/:uuid',
+        '/memento/pay/:boothid/status',
          
         '/memento/config/filter',
         '/memento/config/template',
