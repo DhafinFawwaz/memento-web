@@ -68,6 +68,7 @@ export default async function PaymentPage() {
         <td className="px-2">{formatDate(memento.updated_at)}</td>
         <td className="px-2">{memento.revenue}</td>
         <td className="px-2">{memento.uuid}</td>
+        <td className="px-2">{JSON.stringify(memento.medias)}</td>
         </tr>);
     }
 
