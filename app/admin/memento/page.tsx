@@ -81,6 +81,7 @@ export default async function PaymentPage() {
       <th className="w-12">Updated At</th>
       <th className="w-12">Revenue</th>
       <th className="w-80">UUID</th>
+      <th className="w-80">Medias</th>
     </tr>
   </thead>
   <tbody className="border-bbg-gray-800 border-gray-200">
