@@ -12,4 +12,16 @@ export const env = {
     cronSecret: process.env.CRON_SECRET,
 
     basicAuthSecret: process.env.BASIC_AUTH_SECRET,
+
+    duitkuIsProduction: process.env.DUITKU_IS_PRODUCTION === "1",
+    duitkuMerchantId: process.env.DUITKU_MERCHANT_ID,
+    duitkuAPIKey: process.env.DUITKU_API_KEY,
+    duitkuPrice: process.env.DUITKU_PRICE,
+
+    duitkuToken: process.env.DUITKU_TOKEN,
+    duitkuChannelId: process.env.DUITKU_CHANNEL_ID,
+    duitkuClientKey: process.env.DUITKU_CLIENT_KEY,
+    duitkuPrivateKey: process.env.DUITKU_PRIVATE_KEY,
+    duitkuBearer: process.env.DUITKU_BEARER,
+
 }
