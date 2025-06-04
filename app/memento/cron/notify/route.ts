@@ -1,6 +1,7 @@
 import { db } from "@/utils/supabase/server";
 import { createCSVStr, getAllMemento, getAllMementoYesterday, yesterday } from "@/app/csv-creator";
 import { sendEmailToSelf } from "@/app/mail-sender";
+import { deleteOneWeekOldMemento } from "../cleanup/route";
 
 // TODO: optimize this with denormalized data
 async function countPayments(): Promise<number> {
@@ -33,6 +34,7 @@ export async function GET(request: Request) {
 
     try {
         await notifyPreviousDayRevenue();
+        await deleteOneWeekOldMemento();
         return new Response("Notification sent", { status: 200 });
     } catch (e) {
         return new Response(JSON.stringify(e), { status: 500 });

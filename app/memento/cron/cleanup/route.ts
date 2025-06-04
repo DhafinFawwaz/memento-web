@@ -31,10 +31,10 @@ async function deleteAllObjects(objects: string[]) {
     return data;
 }
 
-async function deleteOneWeekOldMemento() {
+export async function deleteOneWeekOldMemento() {
     const data = await getOneWeekAgoMemento();    
  
-    // console.log("Data", data);
+    console.log("Cleaning up datas", data);
 
     const toDelete: string[] = [];
     for(const d of data) {
@@ -46,7 +46,7 @@ async function deleteOneWeekOldMemento() {
         }
     }
 
-    // console.log("To delete", toDelete);
+    console.log("To delete", toDelete);
 
     const res = await deleteAllObjects(toDelete);
 
