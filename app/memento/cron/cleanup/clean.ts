@@ -9,6 +9,7 @@ function getOneWeekAgo() {
 
 
 async function getOneWeekAgoMemento(): Promise<Memento[]> {
+    console.log("Getting one week ago memento");
     const supabase = await db();
     const { data, error} = await supabase
         .from("memento")
@@ -18,7 +19,9 @@ async function getOneWeekAgoMemento(): Promise<Memento[]> {
         .lte("updated_at", getOneWeekAgo().toISOString())
         .eq("is_deleted", false)
         .select("*");
+    console.log("error", error);
     if(error) throw error;
+    console.log("data", data);
     return data;
 }
 
