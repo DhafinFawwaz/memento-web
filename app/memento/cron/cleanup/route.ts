@@ -31,6 +31,24 @@ async function deleteAllObjects(objects: string[]) {
     return data;
 }
 
+
+export async function GET(request: Request) {
+    const authHeader = request.headers.get('authorization');
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        return new Response('Unauthorized', {
+            status: 401,
+        });
+    }
+
+    try {
+        const data = await deleteOneWeekOldMemento();
+        return new Response(JSON.stringify(data), { status: 200 });
+    } catch (e) {
+        return new Response(JSON.stringify(e), { status: 500 });
+    }
+}
+
+
 export async function deleteOneWeekOldMemento() {
     const data = await getOneWeekAgoMemento();    
  
@@ -52,20 +70,4 @@ export async function deleteOneWeekOldMemento() {
 
     
     return data;
-}
-
-export async function GET(request: Request) {
-    const authHeader = request.headers.get('authorization');
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        return new Response('Unauthorized', {
-            status: 401,
-        });
-    }
-
-    try {
-        const data = await deleteOneWeekOldMemento();
-        return new Response(JSON.stringify(data), { status: 200 });
-    } catch (e) {
-        return new Response(JSON.stringify(e), { status: 500 });
-    }
 }
