@@ -1,5 +1,6 @@
 import { db } from "@/utils/supabase/server";
 import { Memento } from "../../types";
+import { PostgrestSingleResponse } from "@supabase/supabase-js";
 
 function getOneWeekAgo() {
     const d = new Date();
@@ -11,30 +12,27 @@ function getOneWeekAgo() {
 async function getOneWeekAgoMemento(): Promise<Memento[]> {
     console.log("Getting one week ago memento");
     const supabase = await db();
-    const { data, error} = await supabase
-        .from("memento")
-        .update({
-            is_deleted: true
-        })
-        .lte("updated_at", getOneWeekAgo().toISOString())
-        .eq("is_deleted", false)
-        .select("*");
-    console.log("error", error);
-    if(error) throw error;
-    console.log("data", data);
-    return data;
+
+    let result: PostgrestSingleResponse<any[]> | null = null;
+
+    while(!result || result.error) {
+        result = await supabase
+            .from("memento")
+            .select("*")
+            .lte("updated_at", getOneWeekAgo().toISOString())
+            .eq("is_deleted", false)
+        if(result.error) {
+            console.error("Error fetching mementos:", result.error);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+    console.log("data", result.data);
+    return result.data;
 }
 
 async function deleteAllObjects(objects: string[]) {
     if(objects.length === 0) return [];
     const supabase = await db();
-    // const { data, error } = await supabase.storage
-    //     .from("memento")
-    //     .remove(objects);
-    // if(error) throw error;
-    // return data;
-
-    // new version one by one but with retry
     for(const object of objects) {
         while(true) {
             try {
@@ -46,34 +44,61 @@ async function deleteAllObjects(objects: string[]) {
                 break;
             } catch (error) {
                 console.error(`Error deleting object ${object}:`, error);
-                // Retry after a short delay
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
         }
     }
 }
 
+async function deleteAllObjectsAndMarkAsDeleted(memento: Memento) {
+    const supabase = await db();
 
+    const objects: string[] = [];
+    for(const m of memento.medias.materials) {
+        objects.push(`databases/${memento.uuid}/${m}`); // secure because filename comes from admin basically
+    }
+    for(const m of memento.medias.results) {
+        objects.push(`databases/${memento.uuid}/result/${m}`); // secure because filename comes from admin basically
+    }
+
+    for(const object of objects) {
+        while(true) {
+            try {
+                const { data, error } = await supabase.storage
+                    .from("memento")
+                    .remove([object]);
+                if (error) throw error;
+                console.log(`Deleted object: ${object}`);
+                break;
+            } catch (error) {
+                console.error(`Error deleting object ${object}:`, error);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+    }
+
+    let result: PostgrestSingleResponse<any> | null = null;
+    while(!result || result.error) {
+        result = await supabase
+            .from("memento")
+            .update({ is_deleted: true })
+            .eq("uuid", memento.uuid)
+            .select("*");
+        if(result.error) {
+            console.error("Error marking memento as deleted:", result.error);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+}
+
+// only thing used
 export async function deleteOneWeekOldMemento() {
     const data = await getOneWeekAgoMemento();    
  
     console.log("Cleaning up datas", data);
 
-    const toDelete: string[] = [];
-    for(const d of data) {
-        for(const m of d.medias.materials) {
-            toDelete.push(`databases/${d.uuid}/${m}`); // secure because filename comes from admin basically
-        }
-        for(const m of d.medias.results) {
-            toDelete.push(`databases/${d.uuid}/result/${m}`); // secure because filename comes from admin basically
-        }
-    }
+    const result = await Promise.all(data.map(memento => deleteAllObjectsAndMarkAsDeleted(memento)));
 
-    console.log("To delete", toDelete);
-
-    await deleteAllObjects(toDelete);
-
-    
     return data;
 }
 
