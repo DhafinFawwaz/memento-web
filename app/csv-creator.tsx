@@ -1,5 +1,6 @@
 import { db } from "@/utils/supabase/server";
 import { Memento } from "./memento/types";
+import { env } from "./env";
 
 export async function getAllMemento(): Promise<Memento[]> {
     const supabase = await db();
@@ -23,10 +24,14 @@ export async function getAllMementoYesterday() {
 
 function ensureNumber(value: any): number {
     try {
-        return parseInt(value);
+        const num = parseInt(value);
+        if (isNaN(num)) {
+            return env.midtransPrice ? parseInt(env.midtransPrice) : 0;
+        }
     } catch (e) {
-        return 0;
+        return env.midtransPrice ? parseInt(env.midtransPrice) : 0;
     }
+    return env.midtransPrice ? parseInt(env.midtransPrice) : 0;
 }
 
 export async function createCSVStr(data: Memento[]) {
