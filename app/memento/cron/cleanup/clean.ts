@@ -1,6 +1,7 @@
 import { db } from "@/utils/supabase/server";
 import { Memento } from "../../types";
 import { PostgrestSingleResponse } from "@supabase/supabase-js";
+import { FileObject } from "@supabase/storage-js/src/lib/types";
 
 function getOneWeekAgo() {
     const d = new Date();
@@ -53,6 +54,8 @@ async function deleteAllObjects(objects: string[]) {
 async function deleteAllObjectsAndMarkAsDeleted(memento: Memento) {
     const supabase = await db();
 
+    console.log("Deleting:", memento);
+
     const objects: string[] = [];
     for(const m of memento.medias.materials) {
         objects.push(`databases/${memento.uuid}/${m}`); // secure because filename comes from admin basically
@@ -97,9 +100,79 @@ export async function deleteOneWeekOldMemento() {
  
     console.log("Cleaning up datas", data);
 
-    const result = await Promise.all(data.map(memento => deleteAllObjectsAndMarkAsDeleted(memento)));
+    const result = await Promise.all(data.map(memento => deleteAllObjectsInMementoAndMarkAsDeletedWithExpensiveRetryButDefinitelySafe(memento)));
 
     return data;
+}
+
+async function deleteAllObjectsInMementoAndMarkAsDeletedWithExpensiveRetryButDefinitelySafe(memento: Memento) {
+    const supabase = await db();
+    let files: FileObject[] = [];
+    let resultFiles: FileObject[] = [];
+    while(true) {
+        const { data, error } = await supabase.storage
+            .from("memento")
+            .list(`databases/${memento.uuid}`, {
+                limit: 1000,
+                offset: 0,
+            });
+        if (!error) {
+            if((data! as FileObject[]).length !== 0) files = data!;
+            console.log("files to delete:", files);
+            break;
+        }
+    }
+
+    while(true) {
+        const { data, error } = await supabase.storage
+            .from("memento")
+            .list(`databases/${memento.uuid}/result`, {
+                limit: 1000,
+                offset: 0,
+            });
+        if (!error) {
+            if((data! as FileObject[]).length !== 0) resultFiles = data!;
+            console.log("resultFiles to delete:", resultFiles);
+            break;
+        }
+    }
+
+    for (const file of files) {
+        while(true) {
+            const { error: deleteError } = await supabase.storage
+                .from("memento")
+                .remove([`databases/${memento.uuid}/${file.name}`]);
+            console.log(`Deleted file: ${memento.uuid}/${file.name}`, deleteError);
+            if (!deleteError) break;
+        }
+    }
+
+
+    for (const file of resultFiles) {
+        while(true) {
+            const { error: deleteError } = await supabase.storage
+                .from("memento")
+                .remove([`databases/${memento.uuid}/result/${file.name}`]);
+            if (!deleteError) break;
+        }
+    }
+
+
+    // mark as deleted
+    while(true) {
+        const { data, error } = await supabase
+            .from("memento")
+            .update({ is_deleted: true })
+            .eq("uuid", memento.uuid)
+            .select("*");
+        if (!error) {
+            console.log(`Marked memento ${memento.uuid} as deleted`);
+            break;
+        } else {
+            console.error("Error marking memento as deleted:", error);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
 }
 
 
