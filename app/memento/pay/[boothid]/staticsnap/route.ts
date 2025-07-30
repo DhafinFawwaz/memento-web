@@ -10,6 +10,9 @@ async function createTransaction(boothid: string, uuid: string) {
     // if exist, return the object
     // else insert it and return the object
 
+    const price = await getPriceByBoothId(boothid);
+    const revenue = price;
+
     const { data, error } = await supabase
         .from("memento")
         .select("*")
@@ -21,7 +24,7 @@ async function createTransaction(boothid: string, uuid: string) {
         // update the uuid
         const { error } = await supabase
             .from("memento")
-            .update({ uuid })
+            .update({ uuid, revenue })
             .eq("uuid", data.uuid)
         if (error) throw error;
         return data;
@@ -33,6 +36,7 @@ async function createTransaction(boothid: string, uuid: string) {
             uuid,
             is_paid: false,
             medias: null,
+            revenue: revenue,
         })
         .select("*")
         .single()
@@ -66,8 +70,7 @@ export async function GET(request: Request) {
 
     try {
         const transaction = await createTransaction(boothid, uuid)
-        const price = await getPriceByBoothId(boothid);
-        return NextResponse.json({success: true, data: {transaction, uuid, price}});
+        return NextResponse.json({success: true, data: {transaction, uuid}});
     } catch (e) {
         console.error(e);
         return NextResponse.json({ success: false, error: "Failed to create transaction" }, { status: 500 });
