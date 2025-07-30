@@ -57,7 +57,7 @@ async function getPriceByBoothId(boothid: string) {
     if (error || !data) {
         // fallback to default price
         console.warn(`No price found for booth ${boothid}, using default price`);
-        return parseInt(env.midtransPrice!) || 38000;
+        return parseInt(env.midtransPrice!) || 38001;
     }
     return data.price;
 }
