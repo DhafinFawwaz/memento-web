@@ -26,12 +26,12 @@ function ensureNumber(value: any): number {
     try {
         const num = parseInt(value);
         if (isNaN(num)) {
-            return env.midtransPrice ? parseInt(env.midtransPrice) : 0;
+            return env.midtransPrice ? parseInt(env.midtransPrice) : 38001;
         }
     } catch (e) {
-        return env.midtransPrice ? parseInt(env.midtransPrice) : 0;
+        return env.midtransPrice ? parseInt(env.midtransPrice) : 38001;
     }
-    return env.midtransPrice ? parseInt(env.midtransPrice) : 0;
+    return env.midtransPrice ? parseInt(env.midtransPrice) : 38001;;
 }
 
 export async function createCSVStr(data: Memento[]) {
