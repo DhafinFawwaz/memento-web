@@ -43,6 +43,21 @@ async function createTransaction(boothid: string, uuid: string) {
 
 }
 
+async function getPriceByBoothId(boothid: string) {
+    const supabase = await db();
+    const { data, error } = await supabase
+        .from("booth")
+        .select("price")
+        .eq("id", boothid)
+        .single();
+    if (error || !data) {
+        // fallback to default price
+        console.warn(`No price found for booth ${boothid}, using default price`);
+        return parseInt(env.midtransPrice!) || 38000;
+    }
+    return data.price;
+}
+
 export async function GET(request: Request) {
 
     const split = request.url.split("/");
@@ -51,7 +66,8 @@ export async function GET(request: Request) {
 
     try {
         const transaction = await createTransaction(boothid, uuid)
-        return NextResponse.json({success: true, data: {transaction, uuid}});
+        const price = await getPriceByBoothId(boothid);
+        return NextResponse.json({success: true, data: {transaction, uuid, price}});
     } catch (e) {
         console.error(e);
         return NextResponse.json({ success: false, error: "Failed to create transaction" }, { status: 500 });
