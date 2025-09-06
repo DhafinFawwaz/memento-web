@@ -55,6 +55,7 @@ function getBody(price: number, orderId: string): DokuCheckoutRequest {
             "amount": price,
             "invoice_number": orderId,
             "auto_redirect": false,
+            "callback_url": "/step/" + orderId 
         },
         "payment": {
             "payment_due_date": 60,
@@ -109,7 +110,8 @@ type DokuCheckoutRequest = {
     order: {
         amount: number,
         invoice_number: string,
-        auto_redirect: boolean
+        auto_redirect: boolean,
+        callback_url: string
     },
     payment: {
         payment_due_date: number,

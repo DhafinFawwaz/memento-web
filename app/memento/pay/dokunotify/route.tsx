@@ -20,11 +20,12 @@ export async function POST(req: Request) {
         const [boothid, uuid] = body.order.invoice_number.split(":");
         const revenue = body.order.amount.toString();
         const additional = body.emoney_payment.account_id || "";
-        console.log("savePayment", revenue, additional, uuid);
+        console.log("savePayment", revenue, additional, uuid, boothid);
         const data = await savePayment(revenue, additional, uuid, boothid);
         console.log("Saved payment", data);
         return NextResponse.json({success: true, data: data});
     } catch(e) {
+        console.error("Error in Doku Webhook:", e);
         return NextResponse.json({success: false, error: e}, {status: 400});
     }
 }
