@@ -19,9 +19,10 @@ export async function POST(req: Request) {
 
     try {
         const data = await getPayment(boothid, randomUUID());
+        console.log("Doku Payment:", data);
         return NextResponse.json({success: true, data: data});
     } catch (error) {
-
+        console.error("Error in Doku Payment:", error);
         return NextResponse.json({success: false, error: error});
     }
 }
