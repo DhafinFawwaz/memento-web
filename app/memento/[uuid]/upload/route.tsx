@@ -57,8 +57,10 @@ export async function POST(request: Request) {
     try {
         const signedUploadUrls = await getSignedUploadUrls(medias);
         await insertMedias(uuid, results, materials);
+        console.log("Response:", signedUploadUrls);
         return NextResponse.json({ success: true, data: signedUploadUrls });
     } catch (e) {
+        console.error(e);
         return NextResponse.json({ success: false, error: e }, { status: 400 });
     }
 }
