@@ -16,9 +16,10 @@ const DOKU_SECRET_KEY = process.env.DOKU_SECRET_KEY;
 export async function POST(req: Request) {
     const split = req.url.split("/");
     const boothid = split[split.length - 2];
-
+    const uuid = randomUUID();
     try {
-        const data = await getPayment(boothid, randomUUID());
+        console.log("getPayment called with boothid:", boothid, "uuid:", uuid);
+        const data = await getPayment(boothid, uuid);
         console.log("Doku Payment:", data);
         return NextResponse.json({success: true, data: data});
     } catch (error) {
