@@ -16,10 +16,12 @@ async function getNullMementoByBoothId(boothid: string): Promise<Memento> {
 }
 
 export async function GET(request: Request) {
+    console.log("Request:", request);
     const splitUrl = request.url.split("/");
     const boothid = splitUrl[splitUrl.length - 2];
     try {
         const memento = await getNullMementoByBoothId(boothid);
+        console.log("Response:", memento);
         return NextResponse.json({ success: true, data: memento });
     } catch (e) {
         console.error(e);
