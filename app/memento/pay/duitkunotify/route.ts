@@ -59,12 +59,13 @@ async function savePayment(revenue: string, additional: string, uuid: string, bo
     const supabase = await db();
     const { data, error } = await supabase
         .from("memento")
-        .insert({
+        .upsert({
             revenue: revenue,
             additional: additional,
             uuid: uuid,
-            boothid: boothid
-        })
+            boothid: boothid,
+            is_paid: true,
+        }, { onConflict: 'uuid' })
         .select()
     if (error) throw error;
     return data[0];
