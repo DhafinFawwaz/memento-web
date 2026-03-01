@@ -1,9 +1,49 @@
 import { db } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 
-async function getSignedUploadUrls(medias: string[]): Promise<{ signedUrl: string; token: string; path: string; }[]> {
+async function getExistingFiles(uuid: string): Promise<Set<string>> {
+    const supabase = await db();
+    const existingFiles = new Set<string>();
+
+    // Check files in databases/{uuid}/
+    try {
+        const { data: mainFiles, error: mainError } = await supabase.storage
+            .from("memento")
+            .list(`databases/${uuid}`, { limit: 1000 });
+        if (!mainError && mainFiles) {
+            mainFiles.forEach(file => {
+                if (file.name) existingFiles.add(`databases/${uuid}/${file.name}`);
+            });
+        }
+    } catch (e) {
+        console.warn(`Could not list files in databases/${uuid}:`, e);
+    }
+
+    // Check files in databases/{uuid}/result/
+    try {
+        const { data: resultFiles, error: resultError } = await supabase.storage
+            .from("memento")
+            .list(`databases/${uuid}/result`, { limit: 1000 });
+        if (!resultError && resultFiles) {
+            resultFiles.forEach(file => {
+                if (file.name) existingFiles.add(`databases/${uuid}/result/${file.name}`);
+            });
+        }
+    } catch (e) {
+        console.warn(`Could not list files in databases/${uuid}/result:`, e);
+    }
+
+    return existingFiles;
+}
+
+async function getSignedUploadUrls(medias: string[], existingFiles: Set<string>): Promise<{ signedUrl: string; token: string; path: string; }[]> {
     const supabase = await db();
     const signedUploadUrls = await Promise.all(medias.map(async (media) => {
+        // Skip if file already exists
+        if (existingFiles.has(media)) {
+            console.log(`File ${media} already exists, skipping signed URL creation`);
+            return { signedUrl: media, token: "", path: media };
+        }
         const { data, error } = await supabase.storage.from("memento").createSignedUploadUrl(media);
         if (error) throw error;
         return data;
@@ -55,7 +95,8 @@ export async function POST(request: Request) {
     const medias = results.concat(materials);
 
     try {
-        const signedUploadUrls = await getSignedUploadUrls(medias);
+        const existingFiles = await getExistingFiles(uuid);
+        const signedUploadUrls = await getSignedUploadUrls(medias, existingFiles);
         await insertMedias(uuid, results, materials);
         console.log("Response:", signedUploadUrls);
         return NextResponse.json({ success: true, data: signedUploadUrls });
