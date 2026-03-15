@@ -226,3 +226,52 @@ export async function deleteUserAction(formData: FormData) {
 
   redirect("/dashboard/users?success=deleted");
 }
+
+// ── Change password ───────────────────────────────────────────
+export async function changePasswordAction(formData: FormData) {
+  const userId = formData.get("user_id")?.toString();
+  const oldPassword = formData.get("old_password")?.toString();
+  const newPassword = formData.get("new_password")?.toString();
+  const confirmPassword = formData.get("confirm_password")?.toString();
+
+  if (!userId || !oldPassword || !newPassword || !confirmPassword) {
+    redirect("/dashboard/settings?error=missing");
+  }
+
+  if (newPassword !== confirmPassword) {
+    redirect("/dashboard/settings?error=mismatch");
+  }
+
+  if (newPassword.length < 6) {
+    redirect("/dashboard/settings?error=too_short");
+  }
+
+  const supabase = await db();
+
+  // Verify old password
+  const oldHash = sha512(oldPassword);
+  const { data: user } = await supabase
+    .from("dashboard_users")
+    .select("id")
+    .eq("id", userId)
+    .eq("password_hash", oldHash)
+    .single();
+
+  if (!user) {
+    redirect("/dashboard/settings?error=wrong_password");
+  }
+
+  // Update to new password
+  const newHash = sha512(newPassword);
+  const { error } = await supabase
+    .from("dashboard_users")
+    .update({ password_hash: newHash })
+    .eq("id", userId);
+
+  if (error) {
+    console.error("Failed to change password:", error);
+    redirect("/dashboard/settings?error=db");
+  }
+
+  redirect("/dashboard/settings?success=password");
+}
