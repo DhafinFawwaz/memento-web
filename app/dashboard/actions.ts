@@ -1,22 +1,49 @@
 "use server";
 
+import { sha512 } from "js-sha512";
 import { redirect } from "next/navigation";
 
 import { clearDashboardSession, setDashboardSession } from "./auth";
+import { db } from "@/utils/supabase/server";
 
 export async function loginDashboardAction(formData: FormData) {
-  const role = formData.get("role")?.toString();
-  const name = formData.get("name")?.toString().trim() || "Operator";
-  const boothId = formData.get("boothId")?.toString().trim() || "BTH-01";
+  const email = formData.get("email")?.toString().trim().toLowerCase();
+  const password = formData.get("password")?.toString();
 
-  if (role !== "superuser" && role !== "user") {
-    redirect("/dashboard/login?error=role");
+  if (!email || !password) {
+    redirect("/dashboard/login?error=missing");
+  }
+
+  const passwordHash = sha512(password);
+  const supabase = await db();
+
+  const { data: user, error } = await supabase
+    .from("dashboard_users")
+    .select("id, email, role, booth_id")
+    .eq("email", email)
+    .eq("password_hash", passwordHash)
+    .single();
+
+  if (error || !user) {
+    redirect("/dashboard/login?error=invalid");
+  }
+
+  let boothName: string | null = null;
+  if (user.booth_id) {
+    const { data: booth } = await supabase
+      .from("booth")
+      .select("name")
+      .eq("id", user.booth_id)
+      .single();
+    boothName = booth?.name || null;
   }
 
   await setDashboardSession({
-    role,
-    displayName: name,
-    boothId: role === "user" ? boothId : undefined,
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+    boothId: user.booth_id ? String(user.booth_id) : null,
+    boothName,
   });
 
   redirect("/dashboard");
@@ -25,4 +52,177 @@ export async function loginDashboardAction(formData: FormData) {
 export async function logoutDashboardAction() {
   await clearDashboardSession();
   redirect("/dashboard/login");
+}
+
+export async function createBoothUserAction(formData: FormData) {
+  const email = formData.get("email")?.toString().trim().toLowerCase();
+  const password = formData.get("password")?.toString();
+  const boothId = formData.get("booth_id")?.toString();
+
+  if (!email || !password || !boothId) {
+    redirect("/dashboard/users?error=missing");
+  }
+
+  const passwordHash = sha512(password);
+  const supabase = await db();
+
+  // Check if email already exists
+  const { data: existing } = await supabase
+    .from("dashboard_users")
+    .select("id")
+    .eq("email", email)
+    .single();
+
+  if (existing) {
+    redirect("/dashboard/users?error=exists");
+  }
+
+  const { error } = await supabase.from("dashboard_users").insert({
+    email,
+    password_hash: passwordHash,
+    role: "user",
+    booth_id: Number(boothId),
+  });
+
+  if (error) {
+    console.error("Failed to create user:", error);
+    redirect("/dashboard/users?error=db");
+  }
+
+  // Send password via email
+  try {
+    const { sendEmailToUser } = await import("@/app/dashboard/mail");
+    await sendEmailToUser(email, password);
+  } catch (e) {
+    console.error("Failed to send email:", e);
+    // User created but email failed — continue anyway
+  }
+
+  redirect("/dashboard/users?success=1");
+}
+
+// ── Global price ──────────────────────────────────────────────
+export async function updateGlobalPriceAction(formData: FormData) {
+  const price = Number(formData.get("price"));
+  if (!price || price < 0) {
+    redirect("/dashboard/pricing?error=invalid_price");
+  }
+
+  const supabase = await db();
+
+  // Update price on ALL booths
+  const { error } = await supabase
+    .from("booth")
+    .update({ price })
+    .gte("id", 0); // update all rows
+
+  if (error) {
+    console.error("Failed to update global price:", error);
+    redirect("/dashboard/pricing?error=db");
+  }
+
+  redirect("/dashboard/pricing?success=price");
+}
+
+// ── Booth-specific price ──────────────────────────────────────
+export async function updateBoothPriceAction(formData: FormData) {
+  const boothId = Number(formData.get("booth_id"));
+  const price = Number(formData.get("price"));
+  if (!boothId || !price || price < 0) {
+    redirect(`/dashboard/booths/${boothId}?error=invalid_price`);
+  }
+
+  const supabase = await db();
+
+  const { error } = await supabase
+    .from("booth")
+    .update({ price })
+    .eq("id", boothId);
+
+  if (error) {
+    console.error("Failed to update booth price:", error);
+    redirect(`/dashboard/booths/${boothId}?error=db`);
+  }
+
+  redirect(`/dashboard/booths/${boothId}?success=price`);
+}
+
+// ── Voucher CRUD ──────────────────────────────────────────────
+export async function createVoucherAction(formData: FormData) {
+  const name = formData.get("name")?.toString().trim();
+  const code = formData.get("code")?.toString().trim().toUpperCase();
+  const discountType = formData.get("discount_type")?.toString();
+  const discountValue = Number(formData.get("discount_value"));
+  const maxUsage = Number(formData.get("max_usage"));
+  const expiresAt = formData.get("expires_at")?.toString();
+
+  if (!name || !code || !discountType || !discountValue || !maxUsage || !expiresAt) {
+    redirect("/dashboard/pricing?error=missing");
+  }
+
+  const supabase = await db();
+
+  const { error } = await supabase.from("voucher").insert({
+    name,
+    code,
+    discount_type: discountType,
+    discount_value: discountValue,
+    max_usage: maxUsage,
+    current_usage: 0,
+    expires_at: new Date(expiresAt).toISOString(),
+  });
+
+  if (error) {
+    console.error("Failed to create voucher:", error);
+    if (error.code === "23505") {
+      redirect("/dashboard/pricing?error=code_exists");
+    }
+    redirect("/dashboard/pricing?error=db");
+  }
+
+  redirect("/dashboard/pricing?success=voucher");
+}
+
+export async function deleteVoucherAction(formData: FormData) {
+  const voucherId = formData.get("voucher_id")?.toString();
+  if (!voucherId) return;
+
+  const supabase = await db();
+
+  const { error } = await supabase.from("voucher").delete().eq("id", voucherId);
+
+  if (error) {
+    console.error("Failed to delete voucher:", error);
+    redirect("/dashboard/pricing?error=db");
+  }
+
+  redirect("/dashboard/pricing?success=deleted");
+}
+
+// ── User management ───────────────────────────────────────────
+export async function deleteUserAction(formData: FormData) {
+  const userId = formData.get("user_id")?.toString();
+  if (!userId) return;
+
+  const supabase = await db();
+
+  // Prevent deleting superuser accounts
+  const { data: user } = await supabase
+    .from("dashboard_users")
+    .select("role")
+    .eq("id", userId)
+    .single();
+
+  if (user?.role === "superuser") {
+    redirect("/dashboard/users?error=cannot_delete_super");
+  }
+
+  const { error } = await supabase.from("dashboard_users").delete().eq("id", userId);
+
+  if (error) {
+    console.error("Failed to delete user:", error);
+    redirect("/dashboard/users?error=db");
+  }
+
+  redirect("/dashboard/users?success=deleted");
 }

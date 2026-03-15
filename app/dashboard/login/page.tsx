@@ -7,6 +7,12 @@ type LoginProps = {
   searchParams: Promise<{ error?: string }>;
 };
 
+const errorMessages: Record<string, string> = {
+  missing: "Email dan password wajib diisi.",
+  invalid: "Email atau password salah.",
+  role: "Role tidak valid.",
+};
+
 export default async function DashboardLoginPage({ searchParams }: LoginProps) {
   const session = await getDashboardSession();
 
@@ -15,61 +21,52 @@ export default async function DashboardLoginPage({ searchParams }: LoginProps) {
   }
 
   const params = await searchParams;
+  const errMsg = params.error ? errorMessages[params.error] || "Terjadi kesalahan." : null;
 
   return (
     <main className="min-h-dvh bg-slate-950 text-slate-100 flex justify-center items-center px-4 py-8">
-      <section className="mx-auto w-full max-w-xl rounded-3xl border border-slate-800 bg-slate-900/70 p-6 md:p-8 shadow-2xl shadow-black/30">
+      <section className="mx-auto w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900/70 p-6 md:p-8 shadow-2xl shadow-black/30">
         <div className="mb-6">
           <p className="text-xs uppercase tracking-[0.2em] text-indigo-300">Authentication Gate</p>
           <h1 className="mt-2 text-2xl font-semibold">Dashboard Login</h1>
           <p className="mt-2 text-sm text-slate-300">
-            Mock auth untuk uji RBAC antara <span className="font-semibold text-white">Superuser</span> dan <span className="font-semibold text-white">User Booth</span>.
+            Masuk dengan email dan password yang diberikan admin.
           </p>
         </div>
 
-        {params.error === "role" ? (
+        {errMsg ? (
           <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            Role tidak valid. Silakan pilih ulang.
+            {errMsg}
           </div>
         ) : null}
 
         <form action={loginDashboardAction} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium" htmlFor="name">
-              Nama Operator
+            <label className="mb-1 block text-sm font-medium" htmlFor="email">
+              Email
             </label>
             <input
-              id="name"
-              name="name"
+              id="email"
+              name="email"
+              type="email"
               required
-              placeholder="Contoh: Tim Pusat"
+              autoComplete="email"
+              placeholder="nama@email.com"
               className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none ring-indigo-500/60 transition focus:ring-2"
             />
           </div>
 
           <div>
-            <p className="mb-2 text-sm font-medium">Role</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <label className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm">
-                <input type="radio" name="role" value="superuser" defaultChecked className="mr-2" />
-                Superuser (Master Dashboard)
-              </label>
-              <label className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm">
-                <input type="radio" name="role" value="user" className="mr-2" />
-                User Booth (Dashboard Lokal)
-              </label>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium" htmlFor="boothId">
-              Booth ID (untuk mode User)
+            <label className="mb-1 block text-sm font-medium" htmlFor="password">
+              Password
             </label>
             <input
-              id="boothId"
-              name="boothId"
-              defaultValue="BTH-01"
-              placeholder="Contoh: BTH-03"
+              id="password"
+              name="password"
+              type="password"
+              required
+              autoComplete="current-password"
+              placeholder="••••••••"
               className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none ring-indigo-500/60 transition focus:ring-2"
             />
           </div>
@@ -78,12 +75,8 @@ export default async function DashboardLoginPage({ searchParams }: LoginProps) {
             type="submit"
             className="w-full rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-400"
           >
-            Masuk ke Dashboard
+            Masuk
           </button>
-
-          <p className="text-xs text-slate-400">
-            Catatan: Ini mock auth. Integrasi JWT/session real + database bisa ditambahkan berikutnya.
-          </p>
         </form>
       </section>
     </main>
