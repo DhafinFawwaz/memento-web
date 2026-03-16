@@ -16,6 +16,12 @@ type Voucher = {
   max_usage: number;
   current_usage: number;
   expires_at: string;
+  allowed_booth_ids: number[];
+};
+
+type Booth = {
+  id: number;
+  name: string | null;
 };
 
 export default async function DashboardPricingPage() {
@@ -39,6 +45,16 @@ export default async function DashboardPricingPage() {
     .single();
 
   const globalPrice = boothRow?.price ?? 0;
+
+  const { data: boothRows } = await supabase
+    .from("booth")
+    .select("id, name")
+    .order("id", { ascending: true });
+
+  const booths = (boothRows ?? []) as Booth[];
+  const boothNameMap = Object.fromEntries(
+    booths.map((b) => [b.id, b.name || `Booth ${b.id}`])
+  ) as Record<number, string>;
 
   // Fetch all vouchers
   const { data: vouchers } = await supabase
@@ -72,7 +88,7 @@ export default async function DashboardPricingPage() {
               {voucherList.length} voucher terdaftar
             </p>
           </div>
-          <VoucherModal />
+          <VoucherModal booths={booths} />
         </div>
 
         <div className="mt-4 overflow-x-auto">
@@ -84,6 +100,7 @@ export default async function DashboardPricingPage() {
                 <th className="pb-2 pr-4">Diskon</th>
                 <th className="pb-2 pr-4">Penggunaan</th>
                 <th className="pb-2 pr-4">Berlaku Sampai</th>
+                <th className="pb-2 pr-4">Booth Berlaku</th>
                 <th className="pb-2 pr-4">Status</th>
                 <th className="pb-2">Aksi</th>
               </tr>
@@ -91,7 +108,7 @@ export default async function DashboardPricingPage() {
             <tbody>
               {voucherList.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-6 text-center text-slate-500">
+                  <td colSpan={8} className="py-6 text-center text-slate-500">
                     Belum ada voucher. Klik &quot;+ Buat Voucher&quot; untuk membuat.
                   </td>
                 </tr>
@@ -125,6 +142,22 @@ export default async function DashboardPricingPage() {
                         dateStyle: "medium",
                         timeStyle: "short",
                       })}
+                    </td>
+                    <td className="py-2 pr-4">
+                      {v.allowed_booth_ids?.length ? (
+                        <div className="flex flex-wrap gap-1">
+                          {v.allowed_booth_ids.map((id) => (
+                            <span
+                              key={`${v.id}-${id}`}
+                              className="inline-block rounded-full border border-slate-700 bg-slate-800/70 px-2 py-0.5 text-[11px] text-slate-200"
+                            >
+                              {boothNameMap[id] || `Booth ${id}`}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-500">-</span>
+                      )}
                     </td>
                     <td className="py-2 pr-4">
                       {isActive ? (

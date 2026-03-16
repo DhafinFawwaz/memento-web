@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { createVoucherAction } from "@/app/dashboard/actions";
 
-export default function VoucherModal() {
+type VoucherModalProps = {
+  booths: Array<{ id: number; name: string | null }>;
+};
+
+export default function VoucherModal({ booths }: VoucherModalProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -16,8 +20,9 @@ export default function VoucherModal() {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-3 backdrop-blur-sm sm:p-6">
+          <div className="flex min-h-full items-start justify-center py-2 sm:items-center sm:py-6">
+            <div className="w-full max-w-2xl rounded-2xl border border-slate-700 bg-slate-900 p-4 shadow-2xl sm:p-6 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold">Buat Voucher Baru</h3>
               <button
@@ -68,7 +73,7 @@ export default function VoucherModal() {
               </div>
 
               {/* Discount type + value */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label htmlFor="v-dtype" className="text-xs font-medium text-slate-400">
                     Tipe Diskon
@@ -129,6 +134,34 @@ export default function VoucherModal() {
                 />
               </div>
 
+              {/* Allowed booths */}
+              <div>
+                <label className="text-xs font-medium text-slate-400">
+                  Berlaku untuk Booth
+                </label>
+                <div className="mt-1 max-h-48 overflow-y-auto rounded-lg border border-slate-700 bg-slate-950 p-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {booths.map((booth) => (
+                      <label
+                        key={booth.id}
+                        className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-slate-200 hover:bg-slate-800/70"
+                      >
+                        <input
+                          type="checkbox"
+                          name="allowed_booth_ids"
+                          value={booth.id}
+                          className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-indigo-500 focus:ring-indigo-500"
+                        />
+                        <span>{booth.name || `Booth ${booth.id}`} (ID: {booth.id})</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Pilih minimal 1 booth.
+                </p>
+              </div>
+
               {/* Actions */}
               <div className="flex justify-end gap-2 pt-2">
                 <button
@@ -146,6 +179,7 @@ export default function VoucherModal() {
                 </button>
               </div>
             </form>
+          </div>
           </div>
         </div>
       )}

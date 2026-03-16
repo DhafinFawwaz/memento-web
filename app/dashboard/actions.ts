@@ -155,8 +155,14 @@ export async function createVoucherAction(formData: FormData) {
   const discountValue = Number(formData.get("discount_value"));
   const maxUsage = Number(formData.get("max_usage"));
   const expiresAt = formData.get("expires_at")?.toString();
+  const allowedBoothIds = [...new Set(
+    formData
+      .getAll("allowed_booth_ids")
+      .map((v) => Number(v))
+      .filter((v) => Number.isInteger(v) && v >= 0)
+  )];
 
-  if (!name || !code || !discountType || !discountValue || !maxUsage || !expiresAt) {
+  if (!name || !code || !discountType || !discountValue || !maxUsage || !expiresAt || allowedBoothIds.length === 0) {
     redirect("/dashboard/pricing?error=missing");
   }
 
@@ -170,6 +176,7 @@ export async function createVoucherAction(formData: FormData) {
     max_usage: maxUsage,
     current_usage: 0,
     expires_at: new Date(expiresAt).toISOString(),
+    allowed_booth_ids: allowedBoothIds,
   });
 
   if (error) {

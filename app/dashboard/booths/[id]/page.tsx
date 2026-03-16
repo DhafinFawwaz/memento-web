@@ -16,6 +16,17 @@ type BoothDetailProps = {
   searchParams: Promise<{ page?: string; from?: string; to?: string }>;
 };
 
+type VoucherForBooth = {
+  id: string;
+  name: string;
+  code: string;
+  discount_type: "percentage" | "nominal";
+  discount_value: number;
+  current_usage: number;
+  max_usage: number;
+  expires_at: string;
+};
+
 export default async function BoothDetailPage({ params, searchParams }: BoothDetailProps) {
   const session = await requireDashboardSession();
   if (session.role !== "superuser") {
@@ -88,6 +99,18 @@ export default async function BoothDetailPage({ params, searchParams }: BoothDet
     allRevenueQuery,
   ]);
 
+  const nowIso = new Date().toISOString();
+  const { data: voucherRows } = await supabase
+    .from("voucher")
+    .select("id, name, code, discount_type, discount_value, current_usage, max_usage, expires_at")
+    .contains("allowed_booth_ids", [booth.id])
+    .gt("expires_at", nowIso)
+    .order("expires_at", { ascending: true });
+
+  const activeVouchers = ((voucherRows ?? []) as VoucherForBooth[]).filter(
+    (v) => v.current_usage < v.max_usage
+  );
+
   const totalRows = countResult.count ?? 0;
   const rows = (dataResult.data ?? []) as { created_at: string; revenue: string }[];
   const totalRevenue = (revenueResult.data ?? []).reduce(
@@ -123,6 +146,30 @@ export default async function BoothDetailPage({ params, searchParams }: BoothDet
             <span className="rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-1 text-emerald-300">
               Printer: Ready
             </span>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-xs text-slate-400">Voucher Aktif Booth Ini</p>
+            {activeVouchers.length === 0 ? (
+              <p className="mt-1 text-sm text-slate-500">Tidak ada voucher aktif.</p>
+            ) : (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {activeVouchers.map((voucher) => (
+                  <span
+                    key={voucher.id}
+                    className="inline-flex items-center gap-1 rounded-full border border-indigo-500/40 bg-indigo-500/15 px-2 py-1 text-xs text-indigo-200"
+                  >
+                    <strong>{voucher.code}</strong>
+                    <span>·</span>
+                    <span>
+                      {voucher.discount_type === "percentage"
+                        ? `${voucher.discount_value}%`
+                        : currency(voucher.discount_value)}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </article>
 
