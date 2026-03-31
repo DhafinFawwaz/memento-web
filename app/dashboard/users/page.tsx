@@ -141,7 +141,9 @@ export default async function DashboardUsersPage({ searchParams }: UsersPageProp
                 <p className="font-medium">{user.email}</p>
                 <p className="text-xs text-slate-400">
                   Role: <span className="uppercase">{user.role}</span>
-                  {user.booth_id ? ` · Booth: ${boothMap.get(user.booth_id) || `#${user.booth_id}`}` : " · Semua Booth"}
+                  {user.booth_id !== null && user.booth_id !== undefined
+                    ? ` · Booth: ${boothMap.get(user.booth_id) || `#${user.booth_id}`}`
+                    : " · Semua Booth"}
                 </p>
               </div>
               <div className="flex items-center gap-2">

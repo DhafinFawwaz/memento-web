@@ -4,8 +4,14 @@ import DashboardShell from "../_components/dashboard-shell";
 import { requireDashboardSession } from "../auth";
 import { currency } from "../mock-data";
 import { db } from "@/utils/supabase/server";
+import DateRangeFilter from "@/app/dashboard/_components/date-range-filter";
+import { resolveDateRange, toIsoRange } from "../date-range";
 
-export default async function DashboardBoothsPage() {
+type DashboardBoothsPageProps = {
+  searchParams: Promise<{ from?: string; to?: string; mode?: string }>;
+};
+
+export default async function DashboardBoothsPage({ searchParams }: DashboardBoothsPageProps) {
   const session = await requireDashboardSession();
   if (session.role !== "superuser") {
     return (
@@ -16,47 +22,35 @@ export default async function DashboardBoothsPage() {
   }
 
   const supabase = await db();
+  const params = await searchParams;
+  const { from: fromDate, to: toDate, isDefaultMonth, hasFilter } = resolveDateRange(
+    params.from,
+    params.to,
+    params.mode
+  );
+  const { fromIso, toIso } = toIsoRange(fromDate, toDate);
 
   // Fetch all booths
-  const { data: booths } = await supabase
-    .from("booth")
-    .select("id, name, price")
-    .order("id", { ascending: true });
+  const [{ data: booths }, { data: boothStatsRows }] = await Promise.all([
+    supabase
+      .from("booth")
+      .select("id, name, price")
+      .order("id", { ascending: true }),
+    supabase.rpc("dashboard_booth_stats", {
+      p_from: fromIso,
+      p_to: toIso,
+    }),
+  ]);
 
   const boothList = (booths ?? []) as { id: number; name: string; price: number }[];
 
-  // For each booth, get total prints and total revenue from memento
   const boothStats: Record<number, { prints: number; revenue: number }> = {};
 
-  if (boothList.length > 0) {
-    // Fetch all stats in parallel
-    const statPromises = boothList.map(async (booth) => {
-      const boothIdStr = String(booth.id);
-
-      const [countRes, revenueRes] = await Promise.all([
-        supabase
-          .from("memento")
-          .select("*", { count: "exact", head: true })
-          .eq("boothid", boothIdStr),
-        supabase
-          .from("memento")
-          .select("revenue")
-          .eq("boothid", boothIdStr),
-      ]);
-
-      const prints = countRes.count ?? 0;
-      const revenue = (revenueRes.data ?? []).reduce(
-        (sum: number, r: { revenue: string }) => sum + (Number(r.revenue) || 0),
-        0
-      );
-
-      return { boothId: booth.id, prints, revenue };
-    });
-
-    const results = await Promise.all(statPromises);
-    for (const r of results) {
-      boothStats[r.boothId] = { prints: r.prints, revenue: r.revenue };
-    }
+  for (const row of (boothStatsRows ?? []) as Array<{ booth_id: number; total_prints: number; total_revenue: number }>) {
+    boothStats[row.booth_id] = {
+      prints: Number(row.total_prints ?? 0),
+      revenue: Number(row.total_revenue ?? 0),
+    };
   }
 
   return (
@@ -67,6 +61,26 @@ export default async function DashboardBoothsPage() {
           Lihat status aktif booth, akses set pricing, dan cek laporan per booth.
         </p>
       </header>
+
+      <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold">Filter Periode</h3>
+            {hasFilter ? (
+              <p className="mt-1 text-xs text-indigo-300">
+                {isDefaultMonth
+                  ? `Bulan ini · ${new Date(fromDate).toLocaleDateString("id-ID", { dateStyle: "medium" })} — ${new Date(toDate).toLocaleDateString("id-ID", { dateStyle: "medium" })}`
+                  : `${new Date(fromDate).toLocaleDateString("id-ID", { dateStyle: "medium" })} — ${new Date(toDate).toLocaleDateString("id-ID", { dateStyle: "medium" })}`}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-slate-500">Semua waktu</p>
+            )}
+          </div>
+        </div>
+        <div className="mt-3">
+          <DateRangeFilter basePath="/dashboard/booths" initialFrom={fromDate} initialTo={toDate} />
+        </div>
+      </section>
 
       <section className="space-y-3">
         {boothList.length === 0 ? (
@@ -100,7 +114,7 @@ export default async function DashboardBoothsPage() {
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link
-                  href={`/dashboard/booths/${booth.id}`}
+                  href={`/dashboard/booths/${booth.id}${hasFilter ? `?from=${fromDate}&to=${toDate}` : "?mode=all"}`}
                   className="rounded-lg border border-slate-700 px-3 py-1 text-xs hover:bg-slate-800"
                 >
                   Lihat Detail Booth
