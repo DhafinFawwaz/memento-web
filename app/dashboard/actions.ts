@@ -29,7 +29,7 @@ export async function loginDashboardAction(formData: FormData) {
   }
 
   let boothName: string | null = null;
-  if (user.booth_id) {
+  if (user.booth_id !== null && user.booth_id !== undefined) {
     const { data: booth } = await supabase
       .from("booth")
       .select("name")
@@ -42,7 +42,7 @@ export async function loginDashboardAction(formData: FormData) {
     userId: user.id,
     email: user.email,
     role: user.role,
-    boothId: user.booth_id ? String(user.booth_id) : null,
+    boothId: user.booth_id !== null && user.booth_id !== undefined ? String(user.booth_id) : null,
     boothName,
   });
 
@@ -128,7 +128,7 @@ export async function updateGlobalPriceAction(formData: FormData) {
 export async function updateBoothPriceAction(formData: FormData) {
   const boothId = Number(formData.get("booth_id"));
   const price = Number(formData.get("price"));
-  if (!boothId || !price || price < 0) {
+  if (Number.isNaN(boothId) || price < 0) {
     redirect(`/dashboard/booths/${boothId}?error=invalid_price`);
   }
 

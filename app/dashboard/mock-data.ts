@@ -89,7 +89,7 @@ export function getVisibleBooths(session: DashboardSession) {
     return booths;
   }
 
-  const boothId = session.boothId || "BTH-01";
+  const boothId = session.boothId ?? "BTH-01";
   return booths.filter((booth) => booth.id === boothId);
 }
 

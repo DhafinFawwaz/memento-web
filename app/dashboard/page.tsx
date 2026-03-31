@@ -6,12 +6,13 @@ import { currency } from "./mock-data";
 import { db } from "@/utils/supabase/server";
 import DownloadXlsButton from "@/app/dashboard/_components/download-xls-button";
 import DateRangeFilter from "@/app/dashboard/_components/date-range-filter";
+import { resolveDateRange, toIsoRange } from "./date-range";
 
 const PAGE_SIZE = 15;
 const VOUCHER_PAGE_SIZE = 10;
 
 type DashboardProps = {
-  searchParams: Promise<{ page?: string; vpage?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ page?: string; vpage?: string; from?: string; to?: string; mode?: string }>;
 };
 
 export default async function DashboardPage({ searchParams }: DashboardProps) {
@@ -25,84 +26,64 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
   const voucherOffset = (voucherPage - 1) * VOUCHER_PAGE_SIZE;
 
   // Date range filter
-  const fromDate = params.from || "";
-  const toDate = params.to || "";
+  const { from: fromDate, to: toDate, isDefaultMonth, hasFilter } = resolveDateRange(
+    params.from,
+    params.to,
+    params.mode
+  );
+  const { fromIso, toIso } = toIsoRange(fromDate, toDate);
 
   const supabase = await db();
   const isSuperuser = session.role === "superuser";
-  const boothIdStr = !isSuperuser && session.boothId ? String(session.boothId) : null;
+  const boothIdStr = !isSuperuser && session.boothId !== null ? String(session.boothId) : null;
 
   // Build query — filter by boothid (text) for user role
-  let countQuery = supabase
-    .from("memento")
-    .select("*", { count: "exact", head: true });
-
   let dataQuery = supabase
     .from("memento")
-    .select("created_at, revenue, boothid")
+    .select("created_at, revenue, boothid", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1);
 
-  let allRevenueQuery = supabase
-    .from("memento")
-    .select("revenue");
-
   if (boothIdStr) {
-    countQuery = countQuery.eq("boothid", boothIdStr);
     dataQuery = dataQuery.eq("boothid", boothIdStr);
-    allRevenueQuery = allRevenueQuery.eq("boothid", boothIdStr);
   }
 
-  // Apply date range filter
-  if (fromDate) {
-    const gte = `${fromDate}T00:00:00.000Z`;
-    countQuery = countQuery.gte("created_at", gte);
-    dataQuery = dataQuery.gte("created_at", gte);
-    allRevenueQuery = allRevenueQuery.gte("created_at", gte);
-  }
-  if (toDate) {
-    // Include the entire end date (up to 23:59:59)
-    const lte = `${toDate}T23:59:59.999Z`;
-    countQuery = countQuery.lte("created_at", lte);
-    dataQuery = dataQuery.lte("created_at", lte);
-    allRevenueQuery = allRevenueQuery.lte("created_at", lte);
-  }
-
-  // Voucher usage queries
-  let voucherCountQuery = supabase
-    .from("voucher_usage")
-    .select("*", { count: "exact", head: true });
+  if (fromIso) dataQuery = dataQuery.gte("created_at", fromIso);
+  if (toIso) dataQuery = dataQuery.lte("created_at", toIso);
 
   let voucherDataQuery = supabase
     .from("voucher_usage")
-    .select("id, created_at, voucher_id, memento_uuid, boothid")
+    .select("id, created_at, voucher_id, memento_uuid, boothid", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(voucherOffset, voucherOffset + VOUCHER_PAGE_SIZE - 1);
 
   if (boothIdStr) {
-    voucherCountQuery = voucherCountQuery.eq("boothid", boothIdStr);
     voucherDataQuery = voucherDataQuery.eq("boothid", boothIdStr);
   }
 
-  const [countResult, dataResult, revenueResult, vCountResult, vDataResult] =
+  if (fromIso) voucherDataQuery = voucherDataQuery.gte("created_at", fromIso);
+  if (toIso) voucherDataQuery = voucherDataQuery.lte("created_at", toIso);
+
+  const summaryQuery = supabase.rpc("dashboard_memento_summary", {
+    p_booth_id: boothIdStr,
+    p_from: fromIso,
+    p_to: toIso,
+  });
+
+  const [dataResult, summaryResult, vDataResult] =
     await Promise.all([
-      countQuery,
       dataQuery,
-      allRevenueQuery,
-      voucherCountQuery,
+      summaryQuery,
       voucherDataQuery,
     ]);
 
-  const totalRows = countResult.count ?? 0;
+  const summaryRow = Array.isArray(summaryResult.data) ? summaryResult.data[0] : null;
+  const totalRows = Number(summaryRow?.total_prints ?? dataResult.count ?? 0);
   const rows = (dataResult.data ?? []) as { created_at: string; revenue: string; boothid: string }[];
-  const totalRevenue = (revenueResult.data ?? []).reduce(
-    (sum: number, r: { revenue: string }) => sum + (Number(r.revenue) || 0),
-    0
-  );
+  const totalRevenue = Number(summaryRow?.total_revenue ?? 0);
   const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
-
   // Voucher usage results
-  const voucherTotalRows = vCountResult.count ?? 0;
+  const voucherTotalRows = vDataResult.count ?? 0;
   type VoucherUsageRow = {
     id: string;
     created_at: string;
@@ -157,9 +138,11 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="text-sm font-semibold">Filter Periode</h3>
-            {(fromDate || toDate) ? (
+            {hasFilter ? (
               <p className="mt-1 text-xs text-indigo-300">
-                {fromDate && toDate
+                {isDefaultMonth
+                  ? `Bulan ini · ${new Date(fromDate).toLocaleDateString("id-ID", { dateStyle: "medium" })} — ${new Date(toDate).toLocaleDateString("id-ID", { dateStyle: "medium" })}`
+                  : fromDate && toDate
                   ? `${new Date(fromDate).toLocaleDateString("id-ID", { dateStyle: "medium" })} — ${new Date(toDate).toLocaleDateString("id-ID", { dateStyle: "medium" })}`
                   : fromDate
                     ? `Dari ${new Date(fromDate).toLocaleDateString("id-ID", { dateStyle: "medium" })}`
@@ -171,29 +154,29 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
           </div>
         </div>
         <div className="mt-3">
-          <DateRangeFilter />
+          <DateRangeFilter initialFrom={fromDate} initialTo={toDate} />
         </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <article className={`rounded-2xl border p-4 ${(fromDate || toDate) ? "border-indigo-500/40 bg-indigo-500/5" : "border-slate-800 bg-slate-900/70"}`}>
+        <article className={`rounded-2xl border p-4 ${hasFilter ? "border-indigo-500/40 bg-indigo-500/5" : "border-slate-800 bg-slate-900/70"}`}>
           <div className="flex items-center gap-2">
             <p className="text-xs text-slate-400">Total Print</p>
-            {(fromDate || toDate) ? (
+            {hasFilter ? (
               <span className="rounded-full border border-indigo-500/40 bg-indigo-500/15 px-2 py-0.5 text-[10px] font-medium text-indigo-300">
-                Filtered
+                {isDefaultMonth ? "Bulan Ini" : "Filtered"}
               </span>
             ) : null}
           </div>
           <h2 className="mt-2 text-3xl font-bold">{totalRows.toLocaleString("id-ID")}</h2>
         </article>
 
-        <article className={`rounded-2xl border p-4 ${(fromDate || toDate) ? "border-indigo-500/40 bg-indigo-500/5" : "border-slate-800 bg-slate-900/70"}`}>
+        <article className={`rounded-2xl border p-4 ${hasFilter ? "border-indigo-500/40 bg-indigo-500/5" : "border-slate-800 bg-slate-900/70"}`}>
           <div className="flex items-center gap-2">
             <p className="text-xs text-slate-400">Total Revenue</p>
-            {(fromDate || toDate) ? (
+            {hasFilter ? (
               <span className="rounded-full border border-indigo-500/40 bg-indigo-500/15 px-2 py-0.5 text-[10px] font-medium text-indigo-300">
-                Filtered
+                {isDefaultMonth ? "Bulan Ini" : "Filtered"}
               </span>
             ) : null}
           </div>
@@ -248,7 +231,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
           <div className="mt-4 flex items-center justify-center gap-2 text-sm">
             {currentPage > 1 ? (
               <Link
-                href={`/dashboard?page=${currentPage - 1}${voucherPage > 1 ? `&vpage=${voucherPage}` : ""}${fromDate ? `&from=${fromDate}` : ""}${toDate ? `&to=${toDate}` : ""}`}
+                href={`/dashboard?page=${currentPage - 1}${voucherPage > 1 ? `&vpage=${voucherPage}` : ""}${fromDate ? `&from=${fromDate}` : ""}${toDate ? `&to=${toDate}` : ""}${params.mode === "all" ? "&mode=all" : ""}`}
                 className="rounded-lg border border-slate-700 px-3 py-1 hover:bg-slate-800"
               >
                 ← Prev
@@ -263,7 +246,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
 
             {currentPage < totalPages ? (
               <Link
-                href={`/dashboard?page=${currentPage + 1}${voucherPage > 1 ? `&vpage=${voucherPage}` : ""}${fromDate ? `&from=${fromDate}` : ""}${toDate ? `&to=${toDate}` : ""}`}
+                href={`/dashboard?page=${currentPage + 1}${voucherPage > 1 ? `&vpage=${voucherPage}` : ""}${fromDate ? `&from=${fromDate}` : ""}${toDate ? `&to=${toDate}` : ""}${params.mode === "all" ? "&mode=all" : ""}`}
                 className="rounded-lg border border-slate-700 px-3 py-1 hover:bg-slate-800"
               >
                 Next →
@@ -325,7 +308,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
           <div className="mt-4 flex items-center justify-center gap-2 text-sm">
             {voucherPage > 1 ? (
               <Link
-                href={`/dashboard?page=${currentPage}&vpage=${voucherPage - 1}`}
+                href={`/dashboard?page=${currentPage}&vpage=${voucherPage - 1}${fromDate ? `&from=${fromDate}` : ""}${toDate ? `&to=${toDate}` : ""}${params.mode === "all" ? "&mode=all" : ""}`}
                 className="rounded-lg border border-slate-700 px-3 py-1 hover:bg-slate-800"
               >
                 ← Prev
@@ -340,7 +323,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
 
             {voucherPage < voucherTotalPages ? (
               <Link
-                href={`/dashboard?page=${currentPage}&vpage=${voucherPage + 1}`}
+                href={`/dashboard?page=${currentPage}&vpage=${voucherPage + 1}${fromDate ? `&from=${fromDate}` : ""}${toDate ? `&to=${toDate}` : ""}${params.mode === "all" ? "&mode=all" : ""}`}
                 className="rounded-lg border border-slate-700 px-3 py-1 hover:bg-slate-800"
               >
                 Next →

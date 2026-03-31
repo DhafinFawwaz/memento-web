@@ -1,19 +1,42 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-export default function DateRangeFilter({ basePath = "/dashboard" }: { basePath?: string }) {
+export default function DateRangeFilter({
+  basePath = "/dashboard",
+  initialFrom = "",
+  initialTo = "",
+}: {
+  basePath?: string;
+  initialFrom?: string;
+  initialTo?: string;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [from, setFrom] = useState(searchParams.get("from") ?? "");
-  const [to, setTo] = useState(searchParams.get("to") ?? "");
+  const currentFrom = useMemo(
+    () => searchParams.get("from") ?? initialFrom,
+    [searchParams, initialFrom]
+  );
+  const currentTo = useMemo(
+    () => searchParams.get("to") ?? initialTo,
+    [searchParams, initialTo]
+  );
+
+  const [from, setFrom] = useState(currentFrom);
+  const [to, setTo] = useState(currentTo);
+
+  useEffect(() => {
+    setFrom(currentFrom);
+    setTo(currentTo);
+  }, [currentFrom, currentTo]);
 
   function apply() {
     const params = new URLSearchParams(searchParams.toString());
     // Reset to page 1 when filtering
     params.delete("page");
+    params.delete("mode");
     if (from) params.set("from", from);
     else params.delete("from");
     if (to) params.set("to", to);
@@ -26,6 +49,7 @@ export default function DateRangeFilter({ basePath = "/dashboard" }: { basePath?
     params.delete("from");
     params.delete("to");
     params.delete("page");
+    params.set("mode", "all");
     router.push(`${basePath}?${params.toString()}`);
     setFrom("");
     setTo("");

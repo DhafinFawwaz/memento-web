@@ -8,12 +8,13 @@ import { db } from "@/utils/supabase/server";
 import BoothPriceEditor from "@/app/dashboard/_components/booth-price-editor";
 import DateRangeFilter from "@/app/dashboard/_components/date-range-filter";
 import DownloadXlsButton from "@/app/dashboard/_components/download-xls-button";
+import { resolveDateRange, toIsoRange } from "@/app/dashboard/date-range";
 
 const PAGE_SIZE = 15;
 
 type BoothDetailProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ page?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ page?: string; from?: string; to?: string; mode?: string }>;
 };
 
 type VoucherForBooth = {
@@ -44,8 +45,12 @@ export default async function BoothDetailPage({ params, searchParams }: BoothDet
   const sp = await searchParams;
   const currentPage = Math.max(1, Number(sp.page) || 1);
   const offset = (currentPage - 1) * PAGE_SIZE;
-  const fromDate = sp.from || "";
-  const toDate = sp.to || "";
+  const { from: fromDate, to: toDate, isDefaultMonth, hasFilter } = resolveDateRange(
+    sp.from,
+    sp.to,
+    sp.mode
+  );
+  const { fromIso, toIso } = toIsoRange(fromDate, toDate);
 
   const supabase = await db();
 
@@ -62,41 +67,25 @@ export default async function BoothDetailPage({ params, searchParams }: BoothDet
   const basePath = `/dashboard/booths/${booth.id}`;
 
   // Build memento queries filtered by this booth
-  let countQuery = supabase
-    .from("memento")
-    .select("*", { count: "exact", head: true })
-    .eq("boothid", boothIdStr);
-
   let dataQuery = supabase
     .from("memento")
-    .select("created_at, revenue")
+    .select("created_at, revenue", { count: "exact" })
     .eq("boothid", boothIdStr)
     .order("created_at", { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1);
 
-  let allRevenueQuery = supabase
-    .from("memento")
-    .select("revenue")
-    .eq("boothid", boothIdStr);
+  if (fromIso) dataQuery = dataQuery.gte("created_at", fromIso);
+  if (toIso) dataQuery = dataQuery.lte("created_at", toIso);
 
-  // Apply date range filter
-  if (fromDate) {
-    const gte = `${fromDate}T00:00:00.000Z`;
-    countQuery = countQuery.gte("created_at", gte);
-    dataQuery = dataQuery.gte("created_at", gte);
-    allRevenueQuery = allRevenueQuery.gte("created_at", gte);
-  }
-  if (toDate) {
-    const lte = `${toDate}T23:59:59.999Z`;
-    countQuery = countQuery.lte("created_at", lte);
-    dataQuery = dataQuery.lte("created_at", lte);
-    allRevenueQuery = allRevenueQuery.lte("created_at", lte);
-  }
+  const summaryQuery = supabase.rpc("dashboard_memento_summary", {
+    p_booth_id: boothIdStr,
+    p_from: fromIso,
+    p_to: toIso,
+  });
 
-  const [countResult, dataResult, revenueResult] = await Promise.all([
-    countQuery,
+  const [dataResult, summaryResult] = await Promise.all([
     dataQuery,
-    allRevenueQuery,
+    summaryQuery,
   ]);
 
   const nowIso = new Date().toISOString();
@@ -111,14 +100,11 @@ export default async function BoothDetailPage({ params, searchParams }: BoothDet
     (v) => v.current_usage < v.max_usage
   );
 
-  const totalRows = countResult.count ?? 0;
+  const summaryRow = Array.isArray(summaryResult.data) ? summaryResult.data[0] : null;
+  const totalRows = Number(summaryRow?.total_prints ?? dataResult.count ?? 0);
   const rows = (dataResult.data ?? []) as { created_at: string; revenue: string }[];
-  const totalRevenue = (revenueResult.data ?? []).reduce(
-    (sum: number, r: { revenue: string }) => sum + (Number(r.revenue) || 0),
-    0
-  );
+  const totalRevenue = Number(summaryRow?.total_revenue ?? 0);
   const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
-  const hasFilter = !!(fromDate || toDate);
 
   return (
     <DashboardShell session={session} active="booths">
@@ -190,7 +176,9 @@ export default async function BoothDetailPage({ params, searchParams }: BoothDet
             <h3 className="text-sm font-semibold">Filter Periode</h3>
             {hasFilter ? (
               <p className="mt-1 text-xs text-indigo-300">
-                {fromDate && toDate
+                {isDefaultMonth
+                  ? `${new Date(fromDate).toLocaleDateString("id-ID", { dateStyle: "medium" })} — ${new Date(toDate).toLocaleDateString("id-ID", { dateStyle: "medium" })} · Bulan ini`
+                  : fromDate && toDate
                   ? `${new Date(fromDate).toLocaleDateString("id-ID", { dateStyle: "medium" })} — ${new Date(toDate).toLocaleDateString("id-ID", { dateStyle: "medium" })}`
                   : fromDate
                     ? `Dari ${new Date(fromDate).toLocaleDateString("id-ID", { dateStyle: "medium" })}`
@@ -202,7 +190,7 @@ export default async function BoothDetailPage({ params, searchParams }: BoothDet
           </div>
         </div>
         <div className="mt-3">
-          <DateRangeFilter basePath={basePath} />
+          <DateRangeFilter basePath={basePath} initialFrom={fromDate} initialTo={toDate} />
         </div>
       </section>
 
@@ -213,7 +201,7 @@ export default async function BoothDetailPage({ params, searchParams }: BoothDet
             <p className="text-xs text-slate-400">Total Print</p>
             {hasFilter ? (
               <span className="rounded-full border border-indigo-500/40 bg-indigo-500/15 px-2 py-0.5 text-[10px] font-medium text-indigo-300">
-                Filtered
+                {isDefaultMonth ? "Bulan Ini" : "Filtered"}
               </span>
             ) : null}
           </div>
@@ -225,7 +213,7 @@ export default async function BoothDetailPage({ params, searchParams }: BoothDet
             <p className="text-xs text-slate-400">Total Revenue</p>
             {hasFilter ? (
               <span className="rounded-full border border-indigo-500/40 bg-indigo-500/15 px-2 py-0.5 text-[10px] font-medium text-indigo-300">
-                Filtered
+                {isDefaultMonth ? "Bulan Ini" : "Filtered"}
               </span>
             ) : null}
           </div>
@@ -275,7 +263,7 @@ export default async function BoothDetailPage({ params, searchParams }: BoothDet
           <div className="mt-4 flex items-center justify-center gap-2 text-sm">
             {currentPage > 1 ? (
               <Link
-                href={`${basePath}?page=${currentPage - 1}${fromDate ? `&from=${fromDate}` : ""}${toDate ? `&to=${toDate}` : ""}`}
+                href={`${basePath}?page=${currentPage - 1}${fromDate ? `&from=${fromDate}` : ""}${toDate ? `&to=${toDate}` : ""}${sp.mode === "all" ? "&mode=all" : ""}`}
                 className="rounded-lg border border-slate-700 px-3 py-1 hover:bg-slate-800"
               >
                 ← Prev
@@ -290,7 +278,7 @@ export default async function BoothDetailPage({ params, searchParams }: BoothDet
 
             {currentPage < totalPages ? (
               <Link
-                href={`${basePath}?page=${currentPage + 1}${fromDate ? `&from=${fromDate}` : ""}${toDate ? `&to=${toDate}` : ""}`}
+                href={`${basePath}?page=${currentPage + 1}${fromDate ? `&from=${fromDate}` : ""}${toDate ? `&to=${toDate}` : ""}${sp.mode === "all" ? "&mode=all" : ""}`}
                 className="rounded-lg border border-slate-700 px-3 py-1 hover:bg-slate-800"
               >
                 Next →

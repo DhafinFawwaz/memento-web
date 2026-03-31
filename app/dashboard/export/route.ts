@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     .order("created_at", { ascending: false });
 
   // User role can only export their own booth
-  if (session.role !== "superuser" && session.boothId) {
+  if (session.role !== "superuser" && session.boothId !== null) {
     query = query.eq("boothid", String(session.boothId));
   } else if (boothId) {
     query = query.eq("boothid", boothId);
