@@ -187,7 +187,11 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
       <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-lg font-semibold">Riwayat Transaksi</h3>
-          <DownloadXlsButton boothId={isSuperuser ? null : session.boothId} />
+          <DownloadXlsButton
+            boothId={isSuperuser ? null : session.boothId}
+            fromDate={fromDate}
+            toDate={toDate}
+          />
         </div>
 
         <div className="mt-4 overflow-x-auto">
