@@ -1,9 +1,28 @@
 "use client";
 
-export default function DownloadXlsButton({ boothId }: { boothId: string | null }) {
+type DownloadXlsButtonProps = {
+  boothId: string | null;
+  fromDate?: string;
+  toDate?: string;
+};
+
+export default function DownloadXlsButton({ boothId, fromDate, toDate }: DownloadXlsButtonProps) {
+  function buildTimestamp() {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mi = String(d.getMinutes()).padStart(2, "0");
+    const ss = String(d.getSeconds()).padStart(2, "0");
+    return `${yyyy}${mm}${dd}-${hh}${mi}${ss}`;
+  }
+
   async function handleDownload() {
     const params = new URLSearchParams();
-    if (boothId) params.set("boothId", boothId);
+    if (boothId !== null) params.set("boothId", boothId);
+    if (fromDate) params.set("from", fromDate);
+    if (toDate) params.set("to", toDate);
 
     const res = await fetch(`/dashboard/export?${params.toString()}`);
     if (!res.ok) {
@@ -15,7 +34,7 @@ export default function DownloadXlsButton({ boothId }: { boothId: string | null 
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `laporan-${boothId || "all"}-${new Date().toISOString().slice(0, 10)}.xls`;
+    a.download = `laporan-${boothId || "all"}-${buildTimestamp()}.xls`;
     document.body.appendChild(a);
     a.click();
     URL.revokeObjectURL(url);
